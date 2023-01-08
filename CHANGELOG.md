@@ -1,9 +1,3 @@
 # Change Log
 
-All notable changes to the "pawn-development" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+Just go to https://github.com/openmultiplayer/vscode-pawn/commits/master
