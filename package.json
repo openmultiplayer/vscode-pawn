@@ -1,8 +1,9 @@
 {
   "name": "pawn-development",
-  "displayName": "Pawn development tool for open.mp and SA:MP",
-  "version": "0.0.9",
-  "publisher": "open.mp",
+  "displayName": "Pawn Development Tool",
+  "description": "Pawn development tool for open.mp and SA:MP",
+  "version": "1.0.0",
+  "publisher": "openmp",
   "engines": {
     "vscode": "^1.30.0"
   },
