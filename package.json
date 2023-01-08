@@ -39,11 +39,36 @@
     "onCommand:pawn-development.initScanDir",
     "onCommand:pawn-development.pawnignore",
     "onCommand:pawn-development.initTask",
-    "onCommand:pawn-development.seq-num",
     "onLanguage:pawn",
     "onLanguage:Pawn"
   ],
   "main": "./out/client/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node ./node_modules/vscode/bin/test",
+    "esbuild-base": "esbuild ./src/client/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "publish": "vsce publish minor"
+  },
+  "dependencies": {
+    "@types/vscode": "^1.70.0",
+    "js-beautify": "^1.14.5",
+    "vscode-languageclient": "^8.0.2",
+    "vscode-languageserver": "^8.0.2",
+    "vscode-languageserver-textdocument": "^1.0.5"
+  },
+  "devDependencies": {
+    "@types/js-beautify": "^1.13.3",
+    "@types/node": "^18.7.6",
+    "@typescript-eslint/eslint-plugin": "^5.33.1",
+    "@typescript-eslint/parser": "^5.33.1",
+    "esbuild": "^0.16.15",
+    "eslint": "^8.22.0",
+    "typescript": "^4.7.4"
+  },
   "contributes": {
     "languages": [
       {
@@ -175,27 +200,5 @@
         }
       ]
     }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node ./node_modules/vscode/bin/test",
-    "publish": "vsce publish minor"
-  },
-  "dependencies": {
-    "@types/vscode": "^1.70.0",
-    "js-beautify": "^1.14.5",
-    "vscode-languageclient": "^8.0.2",
-    "vscode-languageserver": "^8.0.2",
-    "vscode-languageserver-textdocument": "^1.0.5"
-  },
-  "devDependencies": {
-    "@types/js-beautify": "^1.13.3",
-    "@types/node": "^18.7.6",
-    "@typescript-eslint/eslint-plugin": "^5.33.1",
-    "@typescript-eslint/parser": "^5.33.1",
-    "eslint": "^8.22.0",
-    "typescript": "^4.7.4"
   }
 }
