@@ -42,13 +42,13 @@
     "onLanguage:pawn",
     "onLanguage:Pawn"
   ],
-  "main": "./out/client/extension.js",
+  "main": "./dist/main.js",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "yarn esbuild-base -- --minify",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node ./node_modules/vscode/bin/test",
-    "esbuild-base": "esbuild ./src/client/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
+    "esbuild-base": "esbuild ./src/client/extension.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node",
     "esbuild": "npm run esbuild-base -- --sourcemap",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "publish": "vsce publish minor"
