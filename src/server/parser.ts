@@ -483,17 +483,18 @@ export const parseNatives = (textDocument: TextDocument) => {
             }
           }
           doc = doc.replace("/*", "").replace("*/", "").trim();
+          const noTagFunc = func.replace(/^[^:]*:/gm, "");
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
-            insertText: func,
+            insertText: noTagFunc,
             documentation: doc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(func) },
+            start: { line: index, character: m.input.indexOf(noTagFunc) },
             end: {
               line: index,
-              character: m.input.indexOf(func) + func.length,
+              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
             },
           });
           let params: ParameterInformation[] = [];
@@ -514,11 +515,11 @@ export const parseNatives = (textDocument: TextDocument) => {
           // const resOut = /:(.*)/gm.exec(func);
           // if (resOut) func = resOut[1];
           // }
-          const findSnip = pawnFuncCollection.get(func);
+          const findSnip = pawnFuncCollection.get(noTagFunc);
           if (findSnip === undefined) {
-            pawnFuncCollection.set(func, pwnFun);
+            pawnFuncCollection.set(noTagFunc, pwnFun);
           } else {
-            if (findSnip.type !== "customsnip") pawnFuncCollection.set(func, pwnFun);
+            if (findSnip.type !== "customsnip") pawnFuncCollection.set(noTagFunc, pwnFun);
           }
         }
       } while (m);
