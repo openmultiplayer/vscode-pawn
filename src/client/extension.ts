@@ -4,7 +4,6 @@ import * as vscode from "vscode";
 import { initSnippetCollector } from "./commonFunc";
 import path = require("path");
 import { LanguageClient, LanguageClientOptions, ServerOptions, State, TransportKind } from "vscode-languageclient/node";
-import { sequentialNumberGenerate } from "./Sequance Generator";
 import { addToPawnIgnore, InitPawnIgnore } from "./whitelistedpaths";
 import PawnFoldingProvider from "./FoldingProvider";
 
@@ -12,7 +11,6 @@ export let client: LanguageClient;
 
 export async function activate(context: vscode.ExtensionContext) {
   // The server is implemented in node
-  context.subscriptions.push(vscode.commands.registerCommand("pawn-development.seq-num", sequentialNumberGenerate));
   context.subscriptions.push(vscode.commands.registerCommand("pawn-development.initTask", BuildTaskHandler));
   context.subscriptions.push(vscode.commands.registerCommand("pawn-development.initScanDir", InitPawnIgnore));
   context.subscriptions.push(vscode.commands.registerCommand("pawn-development.pawnignore", addToPawnIgnore));

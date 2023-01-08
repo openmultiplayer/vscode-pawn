@@ -159,10 +159,6 @@
         "title": "Pawn Development: Initialize Pawn Build Task"
       },
       {
-        "command": "pawn-development.seq-num",
-        "title": "Pawn Development: Generate Number Sequance"
-      },
-      {
         "command": "pawn-development.pawnignore",
         "title": "Add to .pawnignore"
       },
