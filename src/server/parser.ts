@@ -486,7 +486,7 @@ export const parseNatives = (textDocument: TextDocument) => {
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
-            insertText: func + "(" + args + ")",
+            insertText: func,
             documentation: doc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
