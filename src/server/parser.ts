@@ -19,7 +19,7 @@ import * as url from "url";
 import * as path from "path";
 
 interface PawnFunction {
-  type: "macrodefine" | "customsnip" | "function" | "macrofunction" | "native";
+  type: "macrodefine" | "customsnip" | "function" | "macrofunction" | "native" | "forward";
   textDocument: TextDocument;
   completion: CompletionItem;
   definition: Definition;
@@ -79,7 +79,7 @@ export const parseDefine = (textDocument: TextDocument) => {
   });
 };
 
-export const parsefuncsDefines = (textDocument: TextDocument) => {
+export const parseFuncsDefines = (textDocument: TextDocument) => {
   const regex = /^(\s*)#define\s+([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
@@ -272,8 +272,8 @@ export const parseCustomSnip = (textDocument: TextDocument) => {
   });
 };
 
-export const parsefuncs = (textDocument: TextDocument) => {
-  const regex = /^(\s*)(public|forward|stock|function|func)\s+([\S]{1,})\((.*?)\)/gm;
+export const parseFuncs = (textDocument: TextDocument) => {
+  const regex = /^(\s*)(public|stock|function|func)\s+([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -340,11 +340,89 @@ export const parsefuncs = (textDocument: TextDocument) => {
             params,
             type: "function",
           };
-          // const indexPos = func.indexOf(':');
-          // if (indexPos !== -1) {
-          // const resOut = /:(.*)/gm.exec(func);
-          // if (resOut) func = resOut[1];
-          // }
+
+          const findSnip = pawnFuncCollection.get(noTagFunc);
+          if (findSnip === undefined) {
+            pawnFuncCollection.set(noTagFunc, pwnFun);
+          } else {
+            if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip" || findSnip.type === "forward")
+              pawnFuncCollection.set(noTagFunc, pwnFun);
+          }
+        }
+      } while (m);
+    }
+  });
+};
+
+export const parseForward = (textDocument: TextDocument) => {
+  const regex = /^(\s*)(forward)\s+([\S]{1,})\((.*?)\)/gm;
+  const content = textDocument.getText();
+  const splitContent = content.split("\n");
+  let excempt = 0;
+  splitContent.forEach((cont: string, index: number) => {
+    if (commentRegex.test(cont)) {
+      excempt++;
+    } else if (commentEndRegex.test(cont)) {
+      excempt--;
+    } else if (excempt === 0) {
+      let m;
+      do {
+        m = regex.exec(cont);
+        if (m) {
+          const func = m[3];
+          const args = m[4];
+          let doc = "";
+          let endDoc = -1;
+          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
+          if (endDoc !== -1) {
+            let startDoc = -1;
+            let inNum = index;
+            while (inNum >= 0) {
+              inNum--;
+              if (splitContent[inNum] === undefined) continue;
+              startDoc = splitContent[inNum].indexOf("/*");
+              if (startDoc !== -1) {
+                if (inNum === index) {
+                  doc = splitContent[index];
+                } else if (inNum < index) {
+                  while (inNum < index) {
+                    doc += splitContent[inNum] + "\n\n";
+                    inNum++;
+                  }
+                }
+                break;
+              }
+            }
+          }
+          doc = doc.replace("/*", "").replace("*/", "").trim();
+          const noTagFunc = func.replace(/^[^:]*:/gm, "");
+          const newSnip: CompletionItem = {
+            label: func + "(" + args + ")",
+            kind: CompletionItemKind.Function,
+            insertText: func + "(" + args + ")",
+            documentation: doc,
+          };
+          const newDef: Definition = Location.create(textDocument.uri, {
+            start: { line: index, character: m.input.indexOf(noTagFunc) },
+            end: {
+              line: index,
+              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
+            },
+          });
+          let params: ParameterInformation[] = [];
+          if (args.trim().length > 0) {
+            params = args.split(",").map((value) => ({ label: value.trim() }));
+          } else {
+            params = [];
+          }
+          const pwnFun: PawnFunction = {
+            textDocument: textDocument,
+            definition: newDef,
+            completion: newSnip,
+            params,
+            type: "forward",
+          };
+
           const findSnip = pawnFuncCollection.get(noTagFunc);
           if (findSnip === undefined) {
             pawnFuncCollection.set(noTagFunc, pwnFun);
@@ -358,7 +436,7 @@ export const parsefuncs = (textDocument: TextDocument) => {
   });
 };
 
-export const parsefuncsNonPrefix = (textDocument: TextDocument) => {
+export const parseFuncsNonPrefix = (textDocument: TextDocument) => {
   const regex = /^([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
@@ -626,10 +704,10 @@ export const parseSnippets = async (textDocument: TextDocument, reset = true) =>
   })) as true | false | null;
 
   if (allowNatives) parseNatives(textDocument);
-  if (allowFunction) parsefuncs(textDocument);
-  if (allowFunction) parsefuncsNonPrefix(textDocument);
+  if (allowFunction) { parseForward(textDocument); parseFuncs(textDocument); }
+  if (allowFunction) parseFuncsNonPrefix(textDocument);
   if (allowCustomSnip) parseCustomSnip(textDocument);
-  if (allowDefineFunction) parsefuncsDefines(textDocument);
+  if (allowDefineFunction) parseFuncsDefines(textDocument);
   if (allowDefine) parseDefine(textDocument);
   if (allowWords) parseWords(textDocument);
 };
