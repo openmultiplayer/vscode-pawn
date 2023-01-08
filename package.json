@@ -2,7 +2,7 @@
   "name": "pawn-development",
   "displayName": "Pawn Development Tool",
   "description": "Pawn development tool for open.mp and SA:MP",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "openmp",
   "engines": {
     "vscode": "^1.30.0"
@@ -42,15 +42,12 @@
     "onLanguage:pawn",
     "onLanguage:Pawn"
   ],
-  "main": "./dist/main.js",
+  "main": "./out/client/extension.js",
   "scripts": {
-    "vscode:prepublish": "yarn esbuild-base -- --minify",
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node ./node_modules/vscode/bin/test",
-    "esbuild-base": "esbuild ./src/client/extension.ts --bundle --outfile=dist/main.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run esbuild-base -- --sourcemap",
-    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "publish": "vsce publish minor"
   },
   "dependencies": {
@@ -65,7 +62,6 @@
     "@types/node": "^18.7.6",
     "@typescript-eslint/eslint-plugin": "^5.33.1",
     "@typescript-eslint/parser": "^5.33.1",
-    "esbuild": "^0.16.15",
     "eslint": "^8.22.0",
     "typescript": "^4.7.4"
   },
