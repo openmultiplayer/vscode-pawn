@@ -29,10 +29,13 @@ You can define two types of snippet
 //#function CreateCar(vehicleid, Float:posX, Float:posY, Float:posZ);
 ```
 
+![](https://github.com/openmultiplayer/vscode-pawn/blob/master/assets/snippet.gif)
+
 # Usage of .pawnignore
 Right click on on your files to add to .pawnignore, this way you'll tell extension not to parse these files for auto-complete and intellisense.  
 \*Note: syntax works exactly like `.gitignore`.
 
+![](https://github.com/openmultiplayer/vscode-pawn/blob/master/assets/pawnignore.gif)
 
 # Installation
 Search for "Pawn Development" in the vscode extensions section and install it.  
@@ -72,8 +75,8 @@ with external includes because the paths change from relative to absolute.
 2. replace `${relativeFile}` with `${workspaceRoot}\\gamemodes\\mygamemode.pwn`
 3. all done
 
-## Compiling Pawn Code
 
+## Compiling Pawn Code
 To actually compile after you've set up the `tasks.json` below, press
 `CTRL + Shift + B` (Windows) or `CMD + Shift + B` (Mac), or alternatively open up the
 command palette with `CTRL + Shift + P` (Windows) or `CMD + Shift + P` (Mac) and type
