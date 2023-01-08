@@ -8,9 +8,9 @@
       "args": [
         "grandlarc.pwn", // source file of gamemode
         "-Dgamemodes", // Additional compiler arguments
-        "-;+",
-        "-(+",
-        "-d3"
+        "\"-;+\"",
+        "\"-(+\"",
+        "\"-d3\""
       ],
       "group": {
         "kind": "build",

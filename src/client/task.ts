@@ -11,9 +11,9 @@ export const task = `{
 			"args": [
 				"\${relativeFile}",
 				"-Dgamemodes",
-				"-;+",
-				"-(+",
-				"-d3"
+				"\"-;+\"",
+				"\"-(+\"",
+				"\"-d3\""
 			],
 			"group": {
 				"kind": "build",
