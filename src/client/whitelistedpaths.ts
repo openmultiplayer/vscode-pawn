@@ -2,10 +2,11 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import { initSnippetCollector } from "./commonFunc";
 
-const noWorkSpaceError = "you can use this command inside your workspace only";
-const writeonfile = `// How to use? right click on file or folder of your workspace to add into .pawnignore
-// why to use? sometime, you don't want definition from all files, so use this file to ignore them.
-// if you are having problems, please report issue at https://github.com/oceanroleplay/pawn-community-tool/issues
+const noWorkSpaceError = "You can only use this command in your workspace";
+
+const writeonfile = `// Usage: Right click on a file or a folder in your workspace to add into .pawnignore
+// Explanation: This way you'll tell extension not to parse these files for auto-complete and intellisense.  
+// If you are having problems, please report issue at https://github.com/openmultiplayer/vscode-pawn/issues
 `;
 
 export const InitPawnIgnore = async function () {
@@ -26,7 +27,7 @@ export const InitPawnIgnore = async function () {
 
   if (!fs.existsSync(workspacePath + "/.pawnignore")) {
     fs.writeFileSync(workspacePath + "/.pawnignore", writeonfile);
-    vscode.window.showInformationMessage("created file .pawnignore");
+    vscode.window.showInformationMessage("Created file .pawnignore");
     vscode.workspace.openTextDocument(workspacePath + "/.pawnignore").then(
       (a: vscode.TextDocument) => {
         vscode.window.showTextDocument(a, 1, false);
@@ -61,7 +62,7 @@ export const addToPawnIgnore = async function (selectedFile: vscode.Uri) {
 
   if (!fs.existsSync(workspacePath + "/.pawnignore")) {
     fs.writeFileSync(workspacePath + "/.pawnignore", writeonfile);
-    vscode.window.showInformationMessage("created file .pawnignore");
+    vscode.window.showInformationMessage("Created file .pawnignore");
 
     vscode.workspace.openTextDocument(workspacePath + "/.pawnignore").then(
       (a: vscode.TextDocument) => {
@@ -77,8 +78,8 @@ export const addToPawnIgnore = async function (selectedFile: vscode.Uri) {
   if (data.indexOf(filePath) !== -1) return vscode.window.showInformationMessage(`${filePath} already exist in .pawnignore`);
 
   fs.appendFile(workspacePath + "/.pawnignore", `\n${filePath}`, function (err) {
-    if (err) return vscode.window.showInformationMessage(`unable to add ${filePath} to .pawnignore`);
+    if (err) return vscode.window.showInformationMessage(`Unable to add ${filePath} to .pawnignore`);
     initSnippetCollector(true);
-    return vscode.window.showInformationMessage(`added ${filePath} to .pawnignore`);
+    return vscode.window.showInformationMessage(`Added ${filePath} to .pawnignore`);
   });
 };

@@ -7,27 +7,27 @@ interface RegexCodeFix {
 }
 
 const beforeFix: RegexCodeFix[] = [
-  { expr: /(^[ \t]+#|^#)/gm, replacement: "//iorp_tag_hash_$1" },
-  { expr: /([^\s:]):([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1iorp_tag_semicolon$2" },
-  { expr: /([^\s:])::([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1iorp_tag_two_semicolon$2" },
-  { expr: /([^\s:]):: +([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1iorp_tag_four_semicolon$2" },
-  { expr: /([\w^\s:]): +([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1iorp_tag_three_semicolon$2" },
-  { expr: /([^\s:])@([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1iorp_tag_at$2" },
-  { expr: /\bconst\b/gm, replacement: "iorp_tag_const" },
+  { expr: /(^[ \t]+#|^#)/gm, replacement: "//pawnd_tag_hash_$1" },
+  { expr: /([^\s:]):([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1pawnd_tag_semicolon$2" },
+  { expr: /([^\s:])::([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1pawnd_tag_two_semicolon$2" },
+  { expr: /([^\s:]):: +([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1pawnd_tag_four_semicolon$2" },
+  { expr: /([\w^\s:]): +([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1pawnd_tag_three_semicolon$2" },
+  { expr: /([^\s:])@([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1pawnd_tag_at$2" },
+  { expr: /\bconst\b/gm, replacement: "pawnd_tag_const" },
 ];
 
 const afterFix: RegexCodeFix[] = [
-  { expr: /\biorp_tag_const\b/gm, replacement: "const" },
-  { expr: /iorp_tag_semicolon/gm, replacement: ":" },
-  { expr: /iorp_tag_two_semicolon/gm, replacement: "::" },
-  { expr: /iorp_tag_three_semicolon/gm, replacement: ": " },
-  { expr: /iorp_tag_four_semicolon/gm, replacement: ":: " },
-  { expr: /iorp_tag_at/gm, replacement: "@" },
+  { expr: /\bpawnd_tag_const\b/gm, replacement: "const" },
+  { expr: /pawnd_tag_semicolon/gm, replacement: ":" },
+  { expr: /pawnd_tag_two_semicolon/gm, replacement: "::" },
+  { expr: /pawnd_tag_three_semicolon/gm, replacement: ": " },
+  { expr: /pawnd_tag_four_semicolon/gm, replacement: ":: " },
+  { expr: /pawnd_tag_at/gm, replacement: "@" },
   // { expr: /(^if +\(|^[ \t]+if +\()(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "if(" },
   { expr: />(\s+)\nhook/gm, replacement: ">\nhook" },
   { expr: /static(\s+)const/gm, replacement: "static const" },
   { expr: /\.\s\./gm, replacement: ".." },
-  { expr: /^[ \t]+\/\/iorp_tag_hash_|^\/\/iorp_tag_hash_/gm, replacement: "" },
+  { expr: /^[ \t]+\/\/pawnd_tag_hash_|^\/\/pawnd_tag_hash_/gm, replacement: "" },
 ];
 
 const formatPawn = (content: string) => {

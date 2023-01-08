@@ -1,21 +1,20 @@
 {
-  "name": "pawn-community-tool",
-  "displayName": "Pawn Community Tool",
-  "description": "Pawn Tool for Developing Scripts for Indian Ocean Roleplay™",
-  "version": "1.89.0",
-  "publisher": "IORP",
+  "name": "pawn-development",
+  "displayName": "Pawn development tool for open.mp and SA:MP",
+  "version": "0.0.9",
+  "publisher": "open.mp",
   "engines": {
     "vscode": "^1.30.0"
   },
   "bugs": {
-    "url": "https://github.com/oceanroleplay/pawn-community-tool/issues",
-    "email": "indianoceanroleplay@gmail.com"
+    "url": "https://github.com/openmultiplayer/vscode-pawn/issues",
+    "email": "reach@amii.ir"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/oceanroleplay/pawn-community-tool.git"
+    "url": "https://github.com/openmultiplayer/vscode-pawn.git"
   },
-  "icon": "iorp.png",
+  "icon": "icon.png",
   "categories": [
     "Programming Languages",
     "Formatters",
@@ -23,22 +22,23 @@
     "Other"
   ],
   "keywords": [
-    "iorp",
-    "India",
-    "multiplayer",
-    "Ocean",
-    "Roleplay",
+    "open.mp",
+    "omp",
+    "open multiplayer",
+    "openmultiplayer",
     "samp",
     "vscode",
     "pawn",
     "language",
-    "new"
+    "new",
+    "sa:mp",
+    "sa-mp"
   ],
   "activationEvents": [
-    "onCommand:pawn-community-tool.initScanDir",
-    "onCommand:pawn-community-tool.pawnignore",
-    "onCommand:pawn-community-tool.initTask",
-    "onCommand:pawn-community-tool.seq-num",
+    "onCommand:pawn-development.initScanDir",
+    "onCommand:pawn-development.pawnignore",
+    "onCommand:pawn-development.initTask",
+    "onCommand:pawn-development.seq-num",
     "onLanguage:pawn",
     "onLanguage:Pawn"
   ],
@@ -70,12 +70,12 @@
     "configuration": {
       "id": "pawn",
       "type": "object",
-      "title": "Pawn Community Tool",
+      "title": "Pawn Development",
       "properties": {
         "pawn.language.brace_style": {
           "type": "string",
-          "default": "preserve-inline",
-          "description": "Format keep your code in your choosen brace style",
+          "default": "expand",
+          "description": "Format your code with chosen brace-style",
           "enum": [
             "preserve-inline",
             "collapse",
@@ -150,30 +150,30 @@
     ],
     "commands": [
       {
-        "command": "pawn-community-tool.initScanDir",
-        "title": "Pawn Community Tool: Initialize .pawnignore"
+        "command": "pawn-development.initScanDir",
+        "title": "Pawn Development: Initialize .pawnignore"
       },
       {
-        "command": "pawn-community-tool.initTask",
-        "title": "Pawn Community Tool: Initialize Pawn Build Task"
+        "command": "pawn-development.initTask",
+        "title": "Pawn Development: Initialize Pawn Build Task"
       },
       {
-        "command": "pawn-community-tool.seq-num",
-        "title": "Pawn Community Tool: Generate Number Sequance"
+        "command": "pawn-development.seq-num",
+        "title": "Pawn Development: Generate Number Sequance"
       },
       {
-        "command": "pawn-community-tool.pawnignore",
+        "command": "pawn-development.pawnignore",
         "title": "Add to .pawnignore"
       },
       {
-        "command": "pawn-community-tool.reloadDefs",
-        "title": "Pawn Community Tool: reload definitions"
+        "command": "pawn-development.reloadDefs",
+        "title": "Pawn Development: reload definitions"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "pawn-community-tool.pawnignore",
+          "command": "pawn-development.pawnignore",
           "group": "navigation"
         }
       ]

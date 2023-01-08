@@ -3,7 +3,6 @@ node_modules
 .vscode-test/
 *.vsix
 /scripts
-/pawn-community-tool-0.1.0.vsix
 /package-lock.json
 /.vscodeignore
 /.vscode-test

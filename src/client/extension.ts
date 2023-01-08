@@ -12,12 +12,12 @@ export let client: LanguageClient;
 
 export async function activate(context: vscode.ExtensionContext) {
   // The server is implemented in node
-  context.subscriptions.push(vscode.commands.registerCommand("pawn-community-tool.seq-num", sequentialNumberGenerate));
-  context.subscriptions.push(vscode.commands.registerCommand("pawn-community-tool.initTask", BuildTaskHandler));
-  context.subscriptions.push(vscode.commands.registerCommand("pawn-community-tool.initScanDir", InitPawnIgnore));
-  context.subscriptions.push(vscode.commands.registerCommand("pawn-community-tool.pawnignore", addToPawnIgnore));
+  context.subscriptions.push(vscode.commands.registerCommand("pawn-development.seq-num", sequentialNumberGenerate));
+  context.subscriptions.push(vscode.commands.registerCommand("pawn-development.initTask", BuildTaskHandler));
+  context.subscriptions.push(vscode.commands.registerCommand("pawn-development.initScanDir", InitPawnIgnore));
+  context.subscriptions.push(vscode.commands.registerCommand("pawn-development.pawnignore", addToPawnIgnore));
   context.subscriptions.push(
-    vscode.commands.registerCommand("pawn-community-tool.reloadDefs", () => {
+    vscode.commands.registerCommand("pawn-development.reloadDefs", () => {
       initSnippetCollector(true);
     })
   );
