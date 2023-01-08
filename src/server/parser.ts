@@ -313,17 +313,18 @@ export const parsefuncs = (textDocument: TextDocument) => {
             }
           }
           doc = doc.replace("/*", "").replace("*/", "").trim();
+          const noTagFunc = func.replace(/^[^:]*:/gm, "");
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
-            insertText: func + "(" + args + ")",
+            insertText: noTagFunc,
             documentation: doc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(func) },
+            start: { line: index, character: m.input.indexOf(noTagFunc) },
             end: {
               line: index,
-              character: m.input.indexOf(func) + func.length,
+              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
             },
           });
           let params: ParameterInformation[] = [];
@@ -344,12 +345,12 @@ export const parsefuncs = (textDocument: TextDocument) => {
           // const resOut = /:(.*)/gm.exec(func);
           // if (resOut) func = resOut[1];
           // }
-          const findSnip = pawnFuncCollection.get(func);
+          const findSnip = pawnFuncCollection.get(noTagFunc);
           if (findSnip === undefined) {
-            pawnFuncCollection.set(func, pwnFun);
+            pawnFuncCollection.set(noTagFunc, pwnFun);
           } else {
             if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip")
-              pawnFuncCollection.set(func, pwnFun);
+              pawnFuncCollection.set(noTagFunc, pwnFun);
           }
         }
       } while (m);
@@ -398,17 +399,18 @@ export const parsefuncsNonPrefix = (textDocument: TextDocument) => {
             }
           }
           doc = doc.replace("/*", "").replace("*/", "").trim();
+          const noTagFunc = func.replace(/^[^:]*:/gm, "");
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
-            insertText: func + "(" + args + ")",
+            insertText: noTagFunc,
             documentation: doc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(func) },
+            start: { line: index, character: m.input.indexOf(noTagFunc) },
             end: {
               line: index,
-              character: m.input.indexOf(func) + func.length,
+              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
             },
           });
           let params: ParameterInformation[] = [];
@@ -429,12 +431,12 @@ export const parsefuncsNonPrefix = (textDocument: TextDocument) => {
           // const resOut = /:(.*)/gm.exec(func);
           // if (resOut) func = resOut[1];
           // }
-          const findSnip = pawnFuncCollection.get(func);
+          const findSnip = pawnFuncCollection.get(noTagFunc);
           if (findSnip === undefined) {
-            pawnFuncCollection.set(func, pwnFun);
+            pawnFuncCollection.set(noTagFunc, pwnFun);
           } else {
             if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip")
-              pawnFuncCollection.set(func, pwnFun);
+              pawnFuncCollection.set(noTagFunc, pwnFun);
           }
         }
       } while (m);
