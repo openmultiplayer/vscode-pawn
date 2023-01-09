@@ -1,17 +1,25 @@
 import { Position } from "vscode-languageserver";
 
+export const isPawnExt = (ext: string) => {
+  return ext === ".pwn" || ext === ".inc" || ext === ".pawn";
+};
+
 export const isAlpha = (character: string) => {
   return /[A-Za-z_@:]/.test(character);
 };
+
 export const isAlphaNum = (character: string) => {
   return /[\w@:]/.test(character);
 };
+
 export const isDigit = (character: string) => {
   return /\d/.test(character);
 };
+
 export const isWhitespace = (character: string) => {
   return /\s/.test(character);
 };
+
 export const reverse = (text: string) => {
   return [...text].reverse().join("");
 };

@@ -11,7 +11,7 @@ import {
   MarkupContent,
   MarkupKind,
 } from "vscode-languageserver";
-import { findFunctionIdentifier, positionToIndex, findIdentifierAtCursor } from "./common";
+import { findFunctionIdentifier, positionToIndex, findIdentifierAtCursor, isPawnExt } from "./common";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { connection } from "./server";
 import * as fs from "fs";
@@ -345,7 +345,12 @@ export const parseFuncs = (textDocument: TextDocument) => {
           if (findSnip === undefined) {
             pawnFuncCollection.set(noTagFunc, pwnFun);
           } else {
-            if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip" || findSnip.type === "forward")
+            if (
+              findSnip.type === "macrofunction" ||
+              findSnip.type === "macrodefine" ||
+              findSnip.type === "customsnip" ||
+              findSnip.type === "forward"
+            )
               pawnFuncCollection.set(noTagFunc, pwnFun);
           }
         }
@@ -675,7 +680,7 @@ const isParseAllowed = async (textDocument: TextDocument) => {
 
 export const parseSnippets = async (textDocument: TextDocument, reset = true) => {
   const ext = path.extname(textDocument.uri);
-  if (ext !== ".pwn" && ext !== ".inc") return false;
+  if (!isPawnExt(ext)) return false;
   if (reset) {
     pawnFuncCollection.forEach((value: PawnFunction, key: string) => {
       if (value.textDocument.uri === textDocument.uri) pawnFuncCollection.delete(key);
@@ -704,7 +709,10 @@ export const parseSnippets = async (textDocument: TextDocument, reset = true) =>
   })) as true | false | null;
 
   if (allowNatives) parseNatives(textDocument);
-  if (allowFunction) { parseForward(textDocument); parseFuncs(textDocument); }
+  if (allowFunction) {
+    parseForward(textDocument);
+    parseFuncs(textDocument);
+  }
   if (allowFunction) parseFuncsNonPrefix(textDocument);
   if (allowCustomSnip) parseCustomSnip(textDocument);
   if (allowDefineFunction) parseFuncsDefines(textDocument);
@@ -714,7 +722,7 @@ export const parseSnippets = async (textDocument: TextDocument, reset = true) =>
 
 export const doCompletion = async (params: CompletionParams) => {
   const ext = path.extname(params.textDocument.uri);
-  if (ext !== ".pwn" && ext !== ".inc") return undefined;
+  if (!isPawnExt(ext)) return undefined;
   const comItems: CompletionItem[] = [];
   pawnFuncCollection.forEach((res) => comItems.push(res.completion));
   const findSnip = pawnWords.get(params.textDocument.uri);
@@ -730,7 +738,7 @@ export const doCompletionResolve = async (item: CompletionItem) => {
 
 export const doHover = (document: TextDocument, position: Position): Hover | undefined => {
   const ext = path.extname(document.uri);
-  if (ext !== ".pwn" && ext !== ".inc") return undefined;
+  if (!isPawnExt(ext)) return undefined;
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findIdentifierAtCursor(document.getText(), cursorIndex);
   if (result.identifier.length === 0) return undefined;
@@ -753,7 +761,7 @@ export const doHover = (document: TextDocument, position: Position): Hover | und
 
 export const doSignHelp = (document: TextDocument, position: Position): SignatureHelp | undefined => {
   const ext = path.extname(document.uri);
-  if (ext !== ".pwn" && ext !== ".inc") return undefined;
+  if (!isPawnExt(ext)) return undefined;
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findFunctionIdentifier(document.getText(), cursorIndex);
   if (result.identifier === "") return undefined;
@@ -775,7 +783,7 @@ export const doSignHelp = (document: TextDocument, position: Position): Signatur
 
 export const doGoToDef = (document: TextDocument, position: Position) => {
   const ext = path.extname(document.uri);
-  if (ext !== ".pwn" && ext !== ".inc") return undefined;
+  if (!isPawnExt(ext)) return undefined;
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findIdentifierAtCursor(document.getText(), cursorIndex);
   if (result.identifier.length === 0) return;

@@ -77,7 +77,8 @@
           ".pawnignore",
           ".p",
           ".pwn",
-          ".inc"
+          ".inc",
+          ".pawn"
         ],
         "configuration": "./language-configuration.json"
       }

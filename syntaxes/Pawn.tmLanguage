@@ -35,6 +35,7 @@
 	<array>
 		<string>p</string>
 		<string>pwn</string>
+		<string>pawn</string>
 		<string>inc</string>
 	</array>
 	<key>firstLineMatch</key>
