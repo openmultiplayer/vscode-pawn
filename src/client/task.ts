@@ -9,7 +9,7 @@ export const task = `{
 				"instanceLimit": 1,
 			},
 			"args": [
-				"\${relativeFile}",
+				"\${file}",
 				"-Dgamemodes",
 				"'-;+'",
 				"'-(+'",
