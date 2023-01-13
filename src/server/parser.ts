@@ -43,6 +43,11 @@ export const parseDefine = (textDocument: TextDocument) => {
   splitContent.forEach((cont: string, index: number) => {
     if (commentRegex.test(cont)) {
       excempt++;
+      // This is for single line block of comment, for example: 
+      // /* Some comment text here */
+      if (commentEndRegex.test(cont)) {
+        excempt--;
+      }
     } else if (commentEndRegex.test(cont)) {
       excempt--;
     } else if (excempt === 0) {
@@ -87,6 +92,11 @@ export const parseFuncsDefines = (textDocument: TextDocument) => {
   splitContent.forEach((cont: string, index: number) => {
     if (commentRegex.test(cont)) {
       excempt++;
+      // This is for single line block of comment, for example: 
+      // /* Some comment text here */
+      if (commentEndRegex.test(cont)) {
+        excempt--;
+      }
     } else if (commentEndRegex.test(cont)) {
       excempt--;
     } else if (excempt === 0) {
@@ -173,6 +183,11 @@ export const parseCustomSnip = (textDocument: TextDocument) => {
   splitContent.forEach((cont: string, index: number) => {
     if (commentRegex.test(cont)) {
       excempt++;
+      // This is for single line block of comment, for example: 
+      // /* Some comment text here */
+      if (commentEndRegex.test(cont)) {
+        excempt--;
+      }
     } else if (commentEndRegex.test(cont)) {
       excempt--;
     } else if (excempt === 0) {
@@ -280,6 +295,11 @@ export const parseFuncs = (textDocument: TextDocument) => {
   splitContent.forEach((cont: string, index: number) => {
     if (commentRegex.test(cont)) {
       excempt++;
+      // This is for single line block of comment, for example: 
+      // /* Some comment text here */
+      if (commentEndRegex.test(cont)) {
+        excempt--;
+      }
     } else if (commentEndRegex.test(cont)) {
       excempt--;
     } else if (excempt === 0) {
@@ -367,6 +387,11 @@ export const parseForward = (textDocument: TextDocument) => {
   splitContent.forEach((cont: string, index: number) => {
     if (commentRegex.test(cont)) {
       excempt++;
+      // This is for single line block of comment, for example: 
+      // /* Some comment text here */
+      if (commentEndRegex.test(cont)) {
+        excempt--;
+      }
     } else if (commentEndRegex.test(cont)) {
       excempt--;
     } else if (excempt === 0) {
@@ -449,6 +474,11 @@ export const parseFuncsNonPrefix = (textDocument: TextDocument) => {
   splitContent.forEach((cont: string, index: number) => {
     if (commentRegex.test(cont)) {
       excempt++;
+      // This is for single line block of comment, for example: 
+      // /* Some comment text here */
+      if (commentEndRegex.test(cont)) {
+        excempt--;
+      }
     } else if (commentEndRegex.test(cont)) {
       excempt--;
     } else if (excempt === 0) {
@@ -535,6 +565,11 @@ export const parseNatives = (textDocument: TextDocument) => {
   splitContent.forEach((cont: string, index: number) => {
     if (commentRegex.test(cont)) {
       excempt++;
+      // This is for single line block of comment, for example: 
+      // /* Some comment text here */
+      if (commentEndRegex.test(cont)) {
+        excempt--;
+      }
     } else if (commentEndRegex.test(cont)) {
       excempt--;
     } else if (excempt === 0) {
@@ -622,6 +657,11 @@ export const parseWords = (textDocument: TextDocument) => {
   splitContent.forEach((cont: string) => {
     if (commentRegex.test(cont)) {
       excempt++;
+      // This is for single line block of comment, for example: 
+      // /* Some comment text here */
+      if (commentEndRegex.test(cont)) {
+        excempt--;
+      }
     } else if (commentEndRegex.test(cont)) {
       excempt--;
     } else if (excempt === 0 && !RegExp(/^\/\//gm).test(cont.trim())) {
