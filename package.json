@@ -52,13 +52,12 @@
   },
   "dependencies": {
     "@types/vscode": "^1.70.0",
-    "js-beautify": "^1.14.5",
+    "astyle": "^2.0.0",
     "vscode-languageclient": "^8.0.2",
     "vscode-languageserver": "^8.0.2",
     "vscode-languageserver-textdocument": "^1.0.5"
   },
   "devDependencies": {
-    "@types/js-beautify": "^1.13.3",
     "@types/node": "^18.7.6",
     "@typescript-eslint/eslint-plugin": "^5.33.1",
     "@typescript-eslint/parser": "^5.33.1",
@@ -97,14 +96,12 @@
       "properties": {
         "pawn.language.brace_style": {
           "type": "string",
-          "default": "expand",
+          "default": "Allman",
           "description": "Format your code with chosen brace-style",
           "enum": [
-            "preserve-inline",
-            "collapse",
-            "expand",
-            "end-expand",
-            "none"
+            "Allman",
+            "K&R",
+            "Stroustrup"
           ]
         },
         "pawn.language.allowDefine": {
