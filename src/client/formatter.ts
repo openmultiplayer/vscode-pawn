@@ -36,6 +36,7 @@ const formatPawn = async (content: string) => {
     | "Allman"
     | "K&R"
     | "Stroustrup"
+    | "Google"
     | null;
 
   for (const key in beforeFix) {
@@ -50,6 +51,8 @@ const formatPawn = async (content: string) => {
       return "kr"
     else if (brace_style === "Stroustrup")
       return "stroustrup"
+    else if (brace_style === "Google")
+      return "google"
     else
       return "allman"
   })
