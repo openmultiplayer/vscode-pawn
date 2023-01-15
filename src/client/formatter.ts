@@ -8,8 +8,9 @@ interface RegexCodeFix {
 
 const beforeFix: RegexCodeFix[] = [
   { expr: /(^[ \t]+#|^#)/gm, replacement: "//pawnd_tag_hash_$1" },
+  { expr: /\f|\v|\t*(new|static|const)\s*\n\s*((.|\s)*?)\s*;/gm, replacement: "$1 $2;" },
   { expr: /case\s*(\S*)\s*:\s*(\w+\s*.*;)/gm, replacement: "case $1pawnd_switch_case_signle_line$2" },
-  { expr: /extract\s*(.*)->\s*(.*?);/gm, replacement: "pawnd_sscanf_export_$1___$2___" },
+  { expr: /extract\s*(.*)->\s*(.*?);/gm, replacement: "pawnd_sscanf_extract_$1___$2___" },
   { expr: /([^\s:]):([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1pawnd_tag_semicolon$2" },
   { expr: /([^\s:])::([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1pawnd_tag_two_semicolon$2" },
   { expr: /([^\s:])@([^\s:])(?=(?:[^"]*"[^"]*")*[^"]*$)/gm, replacement: "$1pawnd_tag_at$2" },
@@ -19,7 +20,7 @@ const beforeFix: RegexCodeFix[] = [
 const afterFix: RegexCodeFix[] = [
   { expr: /\bpawnd_tag_const\b/gm, replacement: "const" },
   { expr: /case(.*)pawnd_switch_case_signle_line/gm, replacement: "case$1: " },
-  { expr: /pawnd_sscanf_export_(.*?)___(.*?)___/gm, replacement: "export $1-> $2;" },
+  { expr: /pawnd_sscanf_extract_(.*?)___(.*?)___/gm, replacement: "extract $1-> $2;" },
   { expr: /pawnd_tag_semicolon/gm, replacement: ":" },
   { expr: /pawnd_tag_two_semicolon/gm, replacement: "::" },
   { expr: /pawnd_tag_at/gm, replacement: "@" },
