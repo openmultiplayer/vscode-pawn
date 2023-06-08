@@ -555,7 +555,7 @@
 			<key>patterns</key>
 			<array>
 				<dict>
-					<key>match</key> <string>\s*\b(inline|using)\b</string>
+					<key>match</key> <string>\s*\b(inline|using|await|await_str|await_str_s|await_arr|await_var)\b</string>
 					<key>captures</key>
 					<dict>
 						<key>1</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
@@ -837,21 +837,21 @@
 					</array>
 				</dict>
 				<dict>
-					<key>match</key> <string>\s*\b(assert|break|case|continue|default|do|else|exit|for|goto|if|return|sleep|state|switch|while)\b</string>
+					<key>match</key> <string>\s*\b(assert|break|case|continue|default|do|else|exit|for|goto|if|return|yield|sleep|state|switch|while)\b</string>
 					<key>captures</key>
 					<dict>
 						<key>1</key> <dict> <key>name</key> <string>keyword.control.c</string> </dict>
 					</dict>
 				</dict>
 				<dict>
-					<key>match</key> <string>\s*\b(new|enum)\b</string>
+					<key>match</key> <string>\s*\b(new|final|enum)\b</string>
 					<key>captures</key>
 					<dict>
 						<key>1</key> <dict> <key>name</key> <string>storage.type.c</string> </dict>
 					</dict>
 				</dict>
 				<dict>
-					<key>match</key> <string>\s*\b(public|forward|native|char|const|static|stock|hook|task|ptask|void)\b</string>
+					<key>match</key> <string>\s*\b(public|forward|native|char|const|static|stock|hook|task|ptask|timer|remotefunc|foreign|global|void)\b</string>
 					<key>captures</key>
 					<dict>
 						<key>1</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
