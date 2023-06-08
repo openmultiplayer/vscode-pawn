@@ -288,7 +288,7 @@ export const parseCustomSnip = (textDocument: TextDocument) => {
 };
 
 export const parseFuncs = (textDocument: TextDocument) => {
-  const regex = /^(\s*)(public|stock|function|func)\s+([\S]{1,})\((.*?)\)/gm;
+  const regex = /^(\s*)(public|stock|function|func|timer|remotefunc|foreign)\s+([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -337,7 +337,7 @@ export const parseFuncs = (textDocument: TextDocument) => {
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
-            insertText: noTagFunc,
+            insertText: noTagFunc + "(" + args + ")",
             documentation: doc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
