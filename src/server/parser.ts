@@ -11,7 +11,7 @@ import {
   MarkupContent,
   MarkupKind,
 } from "vscode-languageserver";
-import { findFunctionIdentifier, positionToIndex, findIdentifierAtCursor, isPawnExt } from "./common";
+import { findFunctionIdentifier, positionToIndex, findIdentifierAtCursor, isPawnExt, parseDocs } from "./common";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { connection } from "./server";
 import * as fs from "fs";
@@ -56,12 +56,12 @@ export const parseDefine = (textDocument: TextDocument) => {
         m = regexDefine.exec(cont);
         if (m) {
           const func = m[2];
-          const arg = m[3];
+          // const arg = m[3];
           const newSnip: CompletionItem = {
             label: func,
             kind: CompletionItemKind.Text,
             insertText: func,
-            documentation: `${func} ${arg}`,
+            documentation: `### Define Usage:\n${func}`,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
             start: { line: index, character: m.input.indexOf(func) },
@@ -106,35 +106,11 @@ export const parseFuncsDefines = (textDocument: TextDocument) => {
         if (m) {
           const func = m[2];
           const args = m[3];
-          let doc = "";
-          let endDoc = -1;
-          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
-          if (endDoc !== -1) {
-            let startDoc = -1;
-            let inNum = index;
-            while (inNum >= 0) {
-              inNum--;
-              if (splitContent[inNum] === undefined) continue;
-              startDoc = splitContent[inNum].indexOf("/*");
-              if (startDoc !== -1) {
-                if (inNum === index) {
-                  doc = splitContent[index];
-                } else if (inNum < index) {
-                  while (inNum < index) {
-                    doc += splitContent[inNum] + "\n\n";
-                    inNum++;
-                  }
-                }
-                break;
-              }
-            }
-          }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
             insertText: func + "(" + args + ")",
-            documentation: doc,
+            documentation: `### Define Function Usage:\n${func}(${args})`,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
             start: { line: index, character: m.input.indexOf(args) },
@@ -201,7 +177,7 @@ export const parseCustomSnip = (textDocument: TextDocument) => {
             label: func,
             kind: CompletionItemKind.Function,
             insertText: args,
-            documentation: `${func} ${args}`,
+            documentation: `### Generic Snippet Usage:\n${func}`,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
             start: { line: index, character: fisrtReg.input.indexOf(func) },
@@ -225,35 +201,11 @@ export const parseCustomSnip = (textDocument: TextDocument) => {
         if (m) {
           const func = m[1];
           const args = m[2];
-          let doc = "";
-          let endDoc = -1;
-          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
-          if (endDoc !== -1) {
-            let startDoc = -1;
-            let inNum = index;
-            while (inNum >= 0) {
-              inNum--;
-              if (splitContent[inNum] === undefined) continue;
-              startDoc = splitContent[inNum].indexOf("/*");
-              if (startDoc !== -1) {
-                if (inNum === index) {
-                  doc = splitContent[index];
-                } else if (inNum < index) {
-                  while (inNum < index) {
-                    doc += splitContent[inNum] + "\n\n";
-                    inNum++;
-                  }
-                }
-                break;
-              }
-            }
-          }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
             insertText: func + "(" + args + ")",
-            documentation: doc,
+            documentation: `### Snippet Function Usage:\n${func}(${args})`,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
             start: { line: index, character: m.input.indexOf(func) },
@@ -288,7 +240,7 @@ export const parseCustomSnip = (textDocument: TextDocument) => {
 };
 
 export const parseFuncs = (textDocument: TextDocument) => {
-  const regex = /^(\s*)(public|stock|function|func|timer|remotefunc|foreign)\s+([\S]{1,})\((.*?)\)/gm;
+  const regex = /^(?!__)(\s*)(stock|function|func|timer|remotefunc|foreign)\s+((?!.*__)[\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -332,13 +284,14 @@ export const parseFuncs = (textDocument: TextDocument) => {
               }
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
+          doc = doc.replace(/(\/\*|\*+\s+|\*\/|(\*|\*\*)\/)/gm, "").trim();
+          const parseDoc = parseDocs(doc);
           const noTagFunc = func.replace(/^[^:]*:/gm, "");
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
             insertText: noTagFunc + "(" + args + ")",
-            documentation: doc,
+            documentation: parseDoc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
             start: { line: index, character: m.input.indexOf(noTagFunc) },
@@ -380,7 +333,7 @@ export const parseFuncs = (textDocument: TextDocument) => {
 };
 
 export const parseForward = (textDocument: TextDocument) => {
-  const regex = /^(\s*)(forward)\s+([\S]{1,})\((.*?)\)/gm;
+  const regex = /^(\s*)(forward)\s+((?!.*__)[\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -424,13 +377,14 @@ export const parseForward = (textDocument: TextDocument) => {
               }
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
+          doc = doc.replace(/(\/\*|\*+\s+|\*\/|(\*|\*\*)\/)/gm, "").trim();
+          const parseDoc = parseDocs(doc);
           const noTagFunc = func.replace(/^[^:]*:/gm, "");
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
             insertText: func + "(" + args + ")",
-            documentation: doc,
+            documentation: parseDoc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
             start: { line: index, character: m.input.indexOf(noTagFunc) },
@@ -467,7 +421,7 @@ export const parseForward = (textDocument: TextDocument) => {
 };
 
 export const parseFuncsNonPrefix = (textDocument: TextDocument) => {
-  const regex = /^([\S]{1,})\((.*?)\)/gm;
+  const regex = /^((?!.*__)[\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -511,13 +465,14 @@ export const parseFuncsNonPrefix = (textDocument: TextDocument) => {
               }
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
+          doc = doc.replace(/(\/\*|\*+\s+|\*\/|(\*|\*\*)\/)/gm, "").trim();
+          const parseDoc = parseDocs(doc);
           const noTagFunc = func.replace(/^[^:]*:/gm, "");
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
             insertText: noTagFunc,
-            documentation: doc,
+            documentation: parseDoc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
             start: { line: index, character: m.input.indexOf(noTagFunc) },
@@ -558,7 +513,7 @@ export const parseFuncsNonPrefix = (textDocument: TextDocument) => {
 };
 
 export const parseNatives = (textDocument: TextDocument) => {
-  const regex = /^(\s*)(native)\s([\S]{1,})\((.*?)\)/gm;
+  const regex = /^(\s*)(native)\s((?!.*__)[\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -602,13 +557,14 @@ export const parseNatives = (textDocument: TextDocument) => {
               }
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
+          doc = doc.replace(/(\/\*|\*+\s+|\*\/|(\*|\*\*)\/)/gm, "").trim();
+          const parseDoc = parseDocs(doc);
           const noTagFunc = func.replace(/^[^:]*:/gm, "");
           const newSnip: CompletionItem = {
             label: func + "(" + args + ")",
             kind: CompletionItemKind.Function,
             insertText: noTagFunc,
-            documentation: doc,
+            documentation: parseDoc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
             start: { line: index, character: m.input.indexOf(noTagFunc) },

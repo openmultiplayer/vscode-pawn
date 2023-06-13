@@ -190,3 +190,93 @@ export const findIdentifierAtCursor = (content: string, cursorIndex: number): { 
   }
   return result;
 };
+
+export const parseDocs = (docs: string) => {
+  // xml data
+	const reSummary = /<summary>([\s\S]*?)<\/summary>/gm.exec(docs);
+	const reParams = /<param (.*)="(.*)">([\s\S]*?)<\/param>/gm;
+	const reReturns = /<(return|returns)>([\s\S]*?)<\/(return|returns)>/gm.exec(docs);
+	const reRemarks = /<remarks>([\s\S]*?)<\/remarks>/gm;
+
+  // specifier
+  const reStrong = /(<|<\/)(b|strong)>/gm;
+  const reComment = /(<|<\/)(c|a|a (.*)="(.*)")>/gm;
+  const reBr = /(<br)(>| \/>)/gm;
+  const reItalic = /(<|<\/)(em)>/gm;
+  const reTrimuli = /((<|<\/)ul>)|(<\/li>)/gm;
+  const reLi = /<li>/gm;
+  const reLeft = /&lt;/gm;
+  const reRight = /&gt;/gm;
+
+  // output and match (number)
+	let output = "";
+	let m;
+  // eslint-disable-next-line @typescript-eslint/no-inferrable-types
+  let count: number = 0;
+  
+	if (reSummary === null)
+	{
+		output += "This function doesn't have description\n";
+	}
+	else
+	{
+		output += reSummary[1].replace(reStrong, "**").replace(reComment, "`").replace(reBr, "\n").replace(reItalic, "*").replace(reLeft, "<").replace(reRight, ">").trim() + "\n";
+	}
+
+	let paramsText = "### Params\n";
+
+	do {
+		m = reParams.exec(docs);
+
+		if (m !== null)
+		{
+      // For dynamic args
+      if (m[2] === '')
+      {
+        m[2] = '...';
+      }
+			paramsText += `* \`${m[2]}\` - ${m[3].replace(reStrong, "**").replace(reComment, "`").replace(reItalic, "*").replace(reLeft, "<").replace(reRight, ">").trim()}\n`
+			count ++;
+		}
+		
+	} while(m);
+
+	if (count < 1)
+	{
+		paramsText += "This function doesn't have parameter\n";
+	}
+
+	output += paramsText;
+  count = 0;
+
+	if (reReturns !== null)
+	{
+		output += `### Returns\n${reReturns[2].replace(reStrong, "**").replace(reComment, "`").replace(reBr, "\n").replace(reItalic, "*").replace(reLeft, "<").replace(reRight, ">").trim()}\n`;
+	}
+  else
+  {
+    output += `### Returns\nThis function doesn't return any value (void)\n`;
+  }
+  
+  let remarksText = "### Remarks";
+
+  do {
+    m = reRemarks.exec(docs);
+
+    if (m !== null)
+    {
+      remarksText += `\n${m[1].replace(reStrong, "**").replace(reComment, "`").replace(reItalic, "*").replace(reBr, "\n").replace(reTrimuli, "").replace(reLeft, "<").replace(reRight, ">").trim().replace(reLi, "  * ")}`;
+      count ++;
+    }
+  } while (m);
+
+	if (count < 1)
+	{
+		remarksText += "\nThis function doesn't have additional notes\n";
+	}
+
+  output += remarksText;
+  count = 0;
+
+	return output;
+};
