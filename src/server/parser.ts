@@ -56,7 +56,6 @@ export const parseDefine = (textDocument: TextDocument) => {
         m = regexDefine.exec(cont);
         if (m) {
           const func = m[2];
-          // const arg = m[3];
           const newSnip: CompletionItem = {
             label: func,
             kind: CompletionItemKind.Text,
