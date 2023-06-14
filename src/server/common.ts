@@ -207,6 +207,7 @@ export const parseDocs = (docs: string) => {
   const reLi = /<li>/gm;
   const reLeft = /&lt;/gm;
   const reRight = /&gt;/gm;
+  const reUnnecessaryNewline = /(\n)([\s]*)/gm;
 
   // output and match (number)
 	let output = "";
@@ -265,7 +266,7 @@ export const parseDocs = (docs: string) => {
 
     if (m !== null)
     {
-      remarksText += `\n${m[1].replace(/(\n)([\s]*)/gm, " ").replace(reStrong, "**").replace(reComment, "`").replace(reItalic, "*").replace(reBr, "\n\n").replace(reTrimuli, "\n").replace(reLeft, "<").replace(reRight, ">").trim().replace(reLi, "  * ")}\n`;
+      remarksText += `\n${m[1].replace(reUnnecessaryNewline, " ").replace(reStrong, "**").replace(reComment, "`").replace(reItalic, "*").replace(reBr, "\n\n").replace(reTrimuli, "\n").replace(reLeft, "<").replace(reRight, ">").trim().replace(reLi, "  * ")}\n`;
       count ++;
     }
   } while (m);
