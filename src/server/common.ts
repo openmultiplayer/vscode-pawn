@@ -201,7 +201,7 @@ export const parseDocs = (docs: string) => {
   // specifier
   const reStrong = /(<|<\/)(b|strong)>/gm;
   const reComment = /(<|<\/)(c|a|a (.*)="(.*)")>/gm;
-  const reBr = /(<br)(>| \/>)/gm;
+  const reBr = /(<br)(>| \/>)([\s]*)/gm;
   const reItalic = /(<|<\/)(em)>/gm;
   const reTrimuli = /((<|<\/)ul>)|(<\/li>)/gm;
   const reLi = /<li>/gm;
