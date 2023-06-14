@@ -216,11 +216,11 @@ export const parseDocs = (docs: string) => {
   
 	if (reSummary === null)
 	{
-		output += "This function doesn't have description\n";
+		output += "This doesn't have description\n";
 	}
 	else
 	{
-		output += reSummary[1].replace(reStrong, "**").replace(reComment, "`").replace(reBr, "\n").replace(reItalic, "*").replace(reLeft, "<").replace(reRight, ">").trim() + "\n";
+		output += reSummary[1].replace(reStrong, "**").replace(reComment, "`").replace(reBr, "\n\n").replace(reItalic, "*").replace(reLeft, "<").replace(reRight, ">").trim() + "\n";
 	}
 
 	let paramsText = "### Params\n";
@@ -243,7 +243,7 @@ export const parseDocs = (docs: string) => {
 
 	if (count < 1)
 	{
-		paramsText += "This function doesn't have parameter\n";
+		paramsText += "This doesn't have any parameter\n";
 	}
 
 	output += paramsText;
@@ -251,11 +251,11 @@ export const parseDocs = (docs: string) => {
 
 	if (reReturns !== null)
 	{
-		output += `### Returns\n${reReturns[2].replace(reStrong, "**").replace(reComment, "`").replace(reBr, "\n").replace(reItalic, "*").replace(reLeft, "<").replace(reRight, ">").trim()}\n`;
+		output += `### Returns\n${reReturns[2].replace(reStrong, "**").replace(reComment, "`").replace(reBr, "\n\n").replace(reItalic, "*").replace(reLeft, "<").replace(reRight, ">").trim()}\n`;
 	}
   else
   {
-    output += `### Returns\nThis function doesn't return any value (void)\n`;
+    output += `### Returns\nThis doesn't return any value (void)\n`;
   }
   
   let remarksText = "### Remarks";
@@ -265,14 +265,14 @@ export const parseDocs = (docs: string) => {
 
     if (m !== null)
     {
-      remarksText += `\n${m[1].replace(reStrong, "**").replace(reComment, "`").replace(reItalic, "*").replace(reBr, "\n").replace(reTrimuli, "").replace(reLeft, "<").replace(reRight, ">").trim().replace(reLi, "  * ")}`;
+      remarksText += `\n${m[1].replace(reStrong, "**").replace(reComment, "`").replace(reItalic, "*").replace(reBr, "\n\n").replace(reTrimuli, "").replace(reLeft, "<").replace(reRight, ">").trim().replace(reLi, "  * ")}\n`;
       count ++;
     }
   } while (m);
 
 	if (count < 1)
 	{
-		remarksText += "\nThis function doesn't have additional notes\n";
+		remarksText += "\nThis doesn't have additional notes\n";
 	}
 
   output += remarksText;
