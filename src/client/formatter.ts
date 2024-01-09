@@ -28,8 +28,9 @@ const afterFix: RegexCodeFix[] = [
   { expr: /static(\s+)const/gm, replacement: "static const" },
   { expr: /\.\s\./gm, replacement: ".." },
   { expr: /^[ \t]+\/\/pawnd_tag_hash_|^\/\/pawnd_tag_hash_/gm, replacement: "" },
-  { expr: /CMD(.*):\r\n(.*)\(/gmi, replacement: "CMD$1:$2(" },
-  { expr: /CMD(.*):\n(.*)\(/gmi, replacement: "CMD$1:$2(" }
+  { expr: /CMD(.*):\r\n(.*)\(/gim, replacement: "CMD$1:$2(" },
+  { expr: /CMD(.*):\n(.*)\(/gim, replacement: "CMD$1:$2(" },
+  { expr: /(static|const|new) (.*?):\s+/gm, replacement: "$1 $2:" },
 ];
 
 const formatPawn = async (content: string) => {
@@ -45,18 +46,13 @@ const formatPawn = async (content: string) => {
     content = content.replace(element.expr, element.replacement);
   }
 
-  const style = (() => {
-    if (brace_style === "Allman")
-      return "allman"
-    else if (brace_style === "K&R")
-      return "kr"
-    else if (brace_style === "Stroustrup")
-      return "stroustrup"
-    else if (brace_style === "Google")
-      return "google"
-    else
-      return "allman"
-  })
+  const style = () => {
+    if (brace_style === "Allman") return "allman";
+    else if (brace_style === "K&R") return "kr";
+    else if (brace_style === "Stroustrup") return "stroustrup";
+    else if (brace_style === "Google") return "google";
+    else return "allman";
+  };
 
   const formatterConfig = [
     `--style=${style()}`,
@@ -64,12 +60,13 @@ const formatPawn = async (content: string) => {
     "--indent-preproc-define",
     "--indent-col1-comments",
     "--indent-preproc-block",
+    "--indent-after-parens",
     "--pad-comma",
     "--pad-oper",
     "--unpad-paren",
     "--pad-header",
-    "--attach-return-type"
-  ]
+    "--attach-return-type",
+  ];
 
   content = await format(content, formatterConfig.join(" "));
   for (const key in afterFix) {
