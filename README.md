@@ -42,7 +42,7 @@ Search for "Pawn Development" in the vscode extensions section and install it.
 Alternatively, you can check out the source code or view the marketplace page:
 
 - [GitHub Page](https://github.com/openmultiplayer/vscode-pawn)
-- [Marketplace Page](https://marketplace.visualstudio.com/items?itemName=open.mp.vscode-pawn)
+- [Marketplace Page](https://marketplace.visualstudio.com/items?itemName=openmp.pawn-development)
 
 
 ## Creating `tasks.json`
