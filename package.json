@@ -1,19 +1,19 @@
 {
   "name": "pawn-development",
-  "displayName": "Pawn Development Tool",
-  "description": "Pawn development tool for open.mp and SA:MP",
-  "version": "1.1.5",
-  "publisher": "openmp",
+  "displayName": "Neufox's Pawn Development Tool",
+  "description": "Neufox's edition of Pawn development tool for open.mp",
+  "version": "1.1.6",
+  "publisher": "itsneufox",
   "engines": {
-    "vscode": "^1.30.0"
+    "vscode": "^1.75.0"
   },
   "bugs": {
     "url": "https://github.com/openmultiplayer/vscode-pawn/issues",
-    "email": "reach@amii.ir"
+    "email": "ajuda@tntsamp.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openmultiplayer/vscode-pawn.git"
+    "url": "https://github.com/itsneufox/vscode-pawn.git"
   },
   "icon": "icon.png",
   "categories": [
@@ -34,13 +34,6 @@
     "new",
     "sa:mp",
     "sa-mp"
-  ],
-  "activationEvents": [
-    "onCommand:pawn-development.initScanDir",
-    "onCommand:pawn-development.pawnignore",
-    "onCommand:pawn-development.initTask",
-    "onLanguage:pawn",
-    "onLanguage:Pawn"
   ],
   "main": "./out/client/extension.js",
   "scripts": {
@@ -107,32 +100,32 @@
         },
         "pawn.language.allowDefine": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "Allow to collect #define for auto completion"
         },
         "pawn.language.allowDefineFunction": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "Allow to collect #define (function style) for auto completion"
         },
         "pawn.language.allowFunction": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "Allow to collect functions for auto completion"
         },
         "pawn.language.allowNatives": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "Allow to collect natives for auto completion"
         },
         "pawn.language.allowWords": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "Allow to collect words from document for auto completion"
         },
         "pawn.language.allowCustomSnip": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "Allow to collect #defineSnip for auto completion"
         },
         "pawn.language.startRegion": {
@@ -147,8 +140,18 @@
         },
         "pawn.language.showLastLineOfRegion": {
           "type": "boolean",
-          "default": "true",
-          "description": "enable to view last line of region section when it's collaped, if you select false then only first line will be visible."
+          "default": true,
+          "description": "Enable to view last line of region section when it's collapsed; if you select false then only first line will be visible."
+        },
+        "pawn.enableGameTextColors": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable or disable game text color feature."
+        },
+        "pawn.enableColorPicker": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable color picker feature."
         }
       }
     },
@@ -185,6 +188,14 @@
       {
         "command": "pawn-development.reloadDefs",
         "title": "Pawn Development: reload definitions"
+      },
+      {
+        "command": "pawn-development.toggleNormalColorPicker",
+        "title": "Toggle Normal Color Picker"
+      },
+      {
+        "command": "pawn-development.toggleGameTextColorPicker",
+        "title": "Toggle Game Text Color Picker"
       }
     ],
     "menus": {
