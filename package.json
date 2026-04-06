@@ -87,8 +87,18 @@
         "language": "pawn",
         "scopeName": "source.pawn",
         "path": "./syntaxes/Pawn.tmLanguage"
+      },
+      {
+        "scopeName": "pawn.namespace-after-modifier.injection",
+        "path": "./syntaxes/pawn-namespace-injection.json",
+        "injectTo": ["source.pawn"]
       }
     ],
+    "configurationDefaults": {
+      "[pawn]": {
+        "editor.semanticHighlighting.enabled": false
+      }
+    },
     "configuration": {
       "id": "pawn",
       "type": "object",
