@@ -28,8 +28,46 @@ interface PawnFunction {
 const pawnFuncCollection: Map<string, PawnFunction> = new Map();
 const pawnWords: Map<string, CompletionItem[]> = new Map();
 
-const commentRegex = RegExp(/\/\*/gm);
-const commentEndRegex = RegExp(/\*\//gm);
+const isLineComment = (line: string) => /^\s*\/\//.test(line);
+
+const stripBlockComments = (line: string, inBlock: boolean) => {
+  let out = "";
+  let i = 0;
+  while (i < line.length) {
+    if (inBlock) {
+      if (line.startsWith("*/", i)) {
+        out += "  ";
+        i += 2;
+        inBlock = false;
+        continue;
+      }
+      out += " ";
+      i += 1;
+      continue;
+    }
+    if (line.startsWith("/*", i)) {
+      out += "  ";
+      i += 2;
+      inBlock = true;
+      continue;
+    }
+    out += line[i];
+    i += 1;
+  }
+  return { text: out, inBlock };
+};
+
+const stripLineComment = (line: string) => {
+  const idx = line.indexOf("//");
+  if (idx === -1) return line;
+  return line.slice(0, idx) + " ".repeat(line.length - idx);
+};
+
+const sanitizeLine = (line: string, inBlock: boolean) => {
+  const stripped = stripBlockComments(line, inBlock);
+  const withLineComments = stripLineComment(stripped.text);
+  return { text: withLineComments, inBlock: stripped.inBlock };
+};
 
 export const resetAutocompletes = () => {
   pawnFuncCollection.clear();
@@ -39,138 +77,124 @@ export const parseDefine = (textDocument: TextDocument) => {
   const regexDefine = /^(\s*)#define\s+([^\s()]{1,})\s+([^\s]{1,})$/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
-  let excempt = 0;
-  splitContent.forEach((cont: string, index: number) => {
-    if (commentRegex.test(cont)) {
-      excempt++;
-      // This is for single line block of comment, for example: 
-      // /* Some comment text here */
-      if (commentEndRegex.test(cont)) {
-        excempt--;
+  let inBlockComment = false;
+  for (let index = 0; index < splitContent.length; index++) {
+    const cont = splitContent[index];
+    const sanitized = sanitizeLine(cont, inBlockComment);
+    inBlockComment = sanitized.inBlock;
+    if (!sanitized.text.trim() || isLineComment(sanitized.text)) continue;
+    let m;
+    do {
+      m = regexDefine.exec(sanitized.text);
+      if (m) {
+        const func = m[2];
+        const arg = m[3];
+        const newSnip: CompletionItem = {
+          label: func,
+          kind: CompletionItemKind.Text,
+          insertText: func,
+          documentation: `${func} ${arg}`,
+        };
+        const newDef: Definition = Location.create(textDocument.uri, {
+          start: { line: index, character: m.input.indexOf(func) },
+          end: {
+            line: index,
+            character: m.input.indexOf(func) + func.length,
+          },
+        });
+        const pwnFun: PawnFunction = {
+          textDocument: textDocument,
+          completion: newSnip,
+          definition: newDef,
+          type: "macrodefine",
+        };
+        const findSnip = pawnFuncCollection.get(func);
+        if (findSnip === undefined) pawnFuncCollection.set(func, pwnFun);
       }
-    } else if (commentEndRegex.test(cont)) {
-      excempt--;
-    } else if (excempt === 0) {
-      let m;
-      do {
-        m = regexDefine.exec(cont);
-        if (m) {
-          const func = m[2];
-          const arg = m[3];
-          const newSnip: CompletionItem = {
-            label: func,
-            kind: CompletionItemKind.Text,
-            insertText: func,
-            documentation: `${func} ${arg}`,
-          };
-          const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(func) },
-            end: {
-              line: index,
-              character: m.input.indexOf(func) + func.length,
-            },
-          });
-          const pwnFun: PawnFunction = {
-            textDocument: textDocument,
-            completion: newSnip,
-            definition: newDef,
-            type: "macrodefine",
-          };
-          const findSnip = pawnFuncCollection.get(func);
-          if (findSnip === undefined) pawnFuncCollection.set(func, pwnFun);
-        }
-      } while (m);
-    }
-  });
+    } while (m);
+  }
 };
 
 export const parseFuncsDefines = (textDocument: TextDocument) => {
   const regex = /^(\s*)#define\s+([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
-  let excempt = 0;
-  splitContent.forEach((cont: string, index: number) => {
-    if (commentRegex.test(cont)) {
-      excempt++;
-      // This is for single line block of comment, for example: 
-      // /* Some comment text here */
-      if (commentEndRegex.test(cont)) {
-        excempt--;
-      }
-    } else if (commentEndRegex.test(cont)) {
-      excempt--;
-    } else if (excempt === 0) {
-      let m;
-      do {
-        m = regex.exec(cont);
-        if (m) {
-          const func = m[2];
-          const args = m[3];
-          let doc = "";
-          let endDoc = -1;
-          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
-          if (endDoc !== -1) {
-            let startDoc = -1;
-            let inNum = index;
-            while (inNum >= 0) {
-              inNum--;
-              if (splitContent[inNum] === undefined) continue;
-              startDoc = splitContent[inNum].indexOf("/*");
-              if (startDoc !== -1) {
-                if (inNum === index) {
-                  doc = splitContent[index];
-                } else if (inNum < index) {
-                  while (inNum < index) {
-                    doc += splitContent[inNum] + "\n\n";
-                    inNum++;
-                  }
+  let inBlockComment = false;
+  for (let index = 0; index < splitContent.length; index++) {
+    const cont = splitContent[index];
+    const sanitized = sanitizeLine(cont, inBlockComment);
+    inBlockComment = sanitized.inBlock;
+    if (!sanitized.text.trim() || isLineComment(sanitized.text)) continue;
+    let m;
+    do {
+      m = regex.exec(sanitized.text);
+      if (m) {
+        const func = m[2];
+        const args = m[3];
+        let doc = "";
+        let endDoc = -1;
+        if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
+        if (endDoc !== -1) {
+          let startDoc = -1;
+          let inNum = index;
+          while (inNum >= 0) {
+            inNum--;
+            if (splitContent[inNum] === undefined) continue;
+            startDoc = splitContent[inNum].indexOf("/*");
+            if (startDoc !== -1) {
+              if (inNum === index) {
+                doc = splitContent[index];
+              } else if (inNum < index) {
+                while (inNum < index) {
+                  doc += splitContent[inNum] + "\n\n";
+                  inNum++;
                 }
-                break;
               }
+              break;
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
-          const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
-            kind: CompletionItemKind.Function,
-            insertText: func + "(" + args + ")",
-            documentation: doc,
-          };
-          const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(args) },
-            end: {
-              line: index,
-              character: m.input.indexOf(args) + args.length,
-            },
-          });
-          let params: ParameterInformation[] = [];
-          if (args.trim().length > 0) {
-            params = args.split(",").map((value) => ({ label: value.trim() }));
-          } else {
-            params = [];
-          }
-          const pwnFun: PawnFunction = {
-            textDocument: textDocument,
-            definition: newDef,
-            completion: newSnip,
-            params,
-            type: "macrofunction",
-          };
-          // const indexPos = func.indexOf(':');
-          // if (indexPos !== -1) {
-          // const resOut = /:(.*)/gm.exec(func);
-          // if (resOut) func = resOut[1];
-          // }
-          const findSnip = pawnFuncCollection.get(func);
-          if (findSnip === undefined) {
-            pawnFuncCollection.set(func, pwnFun);
-          } else {
-            if (findSnip.type === "macrodefine") pawnFuncCollection.set(func, pwnFun);
-          }
         }
-      } while (m);
-    }
-  });
+        doc = doc.replace("/*", "").replace("*/", "").trim();
+        const newSnip: CompletionItem = {
+          label: func + "(" + args + ")",
+          kind: CompletionItemKind.Function,
+          insertText: func + "(" + args + ")",
+          documentation: doc,
+        };
+        const newDef: Definition = Location.create(textDocument.uri, {
+          start: { line: index, character: m.input.indexOf(args) },
+          end: {
+            line: index,
+            character: m.input.indexOf(args) + args.length,
+          },
+        });
+        let params: ParameterInformation[] = [];
+        if (args.trim().length > 0) {
+          params = args.split(",").map((value) => ({ label: value.trim() }));
+        } else {
+          params = [];
+        }
+        const pwnFun: PawnFunction = {
+          textDocument: textDocument,
+          definition: newDef,
+          completion: newSnip,
+          params,
+          type: "macrofunction",
+        };
+        // const indexPos = func.indexOf(':');
+        // if (indexPos !== -1) {
+        // const resOut = /:(.*)/gm.exec(func);
+        // if (resOut) func = resOut[1];
+        // }
+        const findSnip = pawnFuncCollection.get(func);
+        if (findSnip === undefined) {
+          pawnFuncCollection.set(func, pwnFun);
+        } else {
+          if (findSnip.type === "macrodefine") pawnFuncCollection.set(func, pwnFun);
+        }
+      }
+    } while (m);
+  }
 };
 
 export const parseCustomSnip = (textDocument: TextDocument) => {
@@ -179,472 +203,437 @@ export const parseCustomSnip = (textDocument: TextDocument) => {
   const content = textDocument.getText();
   const splitContent = content.split("\n");
 
-  let excempt = 0;
-  splitContent.forEach((cont: string, index: number) => {
-    if (commentRegex.test(cont)) {
-      excempt++;
-      // This is for single line block of comment, for example: 
-      // /* Some comment text here */
-      if (commentEndRegex.test(cont)) {
-        excempt--;
+  let inBlockComment = false;
+  for (let index = 0; index < splitContent.length; index++) {
+    const cont = splitContent[index];
+    const sanitized = sanitizeLine(cont, inBlockComment);
+    inBlockComment = sanitized.inBlock;
+    if (!sanitized.text.trim() || isLineComment(sanitized.text)) continue;
+    let fisrtReg;
+    do {
+      fisrtReg = regexDefine.exec(sanitized.text);
+      if (fisrtReg) {
+        const func = fisrtReg[1];
+        const args = fisrtReg[2];
+        const newSnip: CompletionItem = {
+          label: func,
+          kind: CompletionItemKind.Function,
+          insertText: args,
+          documentation: `${func} ${args}`,
+        };
+        const newDef: Definition = Location.create(textDocument.uri, {
+          start: { line: index, character: fisrtReg.input.indexOf(func) },
+          end: {
+            line: index,
+            character: fisrtReg.input.indexOf(func) + func.length,
+          },
+        });
+        const pwnFun: PawnFunction = {
+          textDocument: textDocument,
+          completion: newSnip,
+          definition: newDef,
+          type: "customsnip",
+        };
+        pawnFuncCollection.set(func, pwnFun);
       }
-    } else if (commentEndRegex.test(cont)) {
-      excempt--;
-    } else if (excempt === 0) {
-      let fisrtReg;
-      do {
-        fisrtReg = regexDefine.exec(cont);
-        if (fisrtReg) {
-          const func = fisrtReg[1];
-          const args = fisrtReg[2];
-          const newSnip: CompletionItem = {
-            label: func,
-            kind: CompletionItemKind.Function,
-            insertText: args,
-            documentation: `${func} ${args}`,
-          };
-          const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: fisrtReg.input.indexOf(func) },
-            end: {
-              line: index,
-              character: fisrtReg.input.indexOf(func) + func.length,
-            },
-          });
-          const pwnFun: PawnFunction = {
-            textDocument: textDocument,
-            completion: newSnip,
-            definition: newDef,
-            type: "customsnip",
-          };
-          pawnFuncCollection.set(func, pwnFun);
-        }
-      } while (fisrtReg);
-      let m;
-      do {
-        m = regexFunction.exec(cont);
-        if (m) {
-          const func = m[1];
-          const args = m[2];
-          let doc = "";
-          let endDoc = -1;
-          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
-          if (endDoc !== -1) {
-            let startDoc = -1;
-            let inNum = index;
-            while (inNum >= 0) {
-              inNum--;
-              if (splitContent[inNum] === undefined) continue;
-              startDoc = splitContent[inNum].indexOf("/*");
-              if (startDoc !== -1) {
-                if (inNum === index) {
-                  doc = splitContent[index];
-                } else if (inNum < index) {
-                  while (inNum < index) {
-                    doc += splitContent[inNum] + "\n\n";
-                    inNum++;
-                  }
+    } while (fisrtReg);
+    let m;
+    do {
+      m = regexFunction.exec(sanitized.text);
+      if (m) {
+        const func = m[1];
+        const args = m[2];
+        let doc = "";
+        let endDoc = -1;
+        if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
+        if (endDoc !== -1) {
+          let startDoc = -1;
+          let inNum = index;
+          while (inNum >= 0) {
+            inNum--;
+            if (splitContent[inNum] === undefined) continue;
+            startDoc = splitContent[inNum].indexOf("/*");
+            if (startDoc !== -1) {
+              if (inNum === index) {
+                doc = splitContent[index];
+              } else if (inNum < index) {
+                while (inNum < index) {
+                  doc += splitContent[inNum] + "\n\n";
+                  inNum++;
                 }
-                break;
               }
+              break;
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
-          const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
-            kind: CompletionItemKind.Function,
-            insertText: func + "(" + args + ")",
-            documentation: doc,
-          };
-          const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(func) },
-            end: {
-              line: index,
-              character: m.input.indexOf(func) + func.length,
-            },
-          });
-          let params: ParameterInformation[] = [];
-          if (args.trim().length > 0) {
-            params = args.split(",").map((value) => ({ label: value.trim() }));
-          } else {
-            params = [];
-          }
-          const pwnFun: PawnFunction = {
-            textDocument: textDocument,
-            definition: newDef,
-            completion: newSnip,
-            params,
-            type: "customsnip",
-          };
-          // const indexPos = func.indexOf(':');
-          // if (indexPos !== -1) {
-          // const resOut = /:(.*)/gm.exec(func);
-          // if (resOut) func = resOut[1];
-          // }
-          pawnFuncCollection.set(func, pwnFun);
         }
-      } while (m);
-    }
-  });
+        doc = doc.replace("/*", "").replace("*/", "").trim();
+        const newSnip: CompletionItem = {
+          label: func + "(" + args + ")",
+          kind: CompletionItemKind.Function,
+          insertText: func + "(" + args + ")",
+          documentation: doc,
+        };
+        const newDef: Definition = Location.create(textDocument.uri, {
+          start: { line: index, character: m.input.indexOf(func) },
+          end: {
+            line: index,
+            character: m.input.indexOf(func) + func.length,
+          },
+        });
+        let params: ParameterInformation[] = [];
+        if (args.trim().length > 0) {
+          params = args.split(",").map((value) => ({ label: value.trim() }));
+        } else {
+          params = [];
+        }
+        const pwnFun: PawnFunction = {
+          textDocument: textDocument,
+          definition: newDef,
+          completion: newSnip,
+          params,
+          type: "customsnip",
+        };
+        // const indexPos = func.indexOf(':');
+        // if (indexPos !== -1) {
+        // const resOut = /:(.*)/gm.exec(func);
+        // if (resOut) func = resOut[1];
+        // }
+        pawnFuncCollection.set(func, pwnFun);
+      }
+    } while (m);
+  }
 };
 
 export const parseFuncs = (textDocument: TextDocument) => {
   const regex = /^(\s*)(public|stock|function|func)\s+([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
-  let excempt = 0;
-  splitContent.forEach((cont: string, index: number) => {
-    if (commentRegex.test(cont)) {
-      excempt++;
-      // This is for single line block of comment, for example: 
-      // /* Some comment text here */
-      if (commentEndRegex.test(cont)) {
-        excempt--;
-      }
-    } else if (commentEndRegex.test(cont)) {
-      excempt--;
-    } else if (excempt === 0) {
-      let m;
-      do {
-        m = regex.exec(cont);
-        if (m) {
-          const func = m[3];
-          const args = m[4];
-          let doc = "";
-          let endDoc = -1;
-          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
-          if (endDoc !== -1) {
-            let startDoc = -1;
-            let inNum = index;
-            while (inNum >= 0) {
-              inNum--;
-              if (splitContent[inNum] === undefined) continue;
-              startDoc = splitContent[inNum].indexOf("/*");
-              if (startDoc !== -1) {
-                if (inNum === index) {
-                  doc = splitContent[index];
-                } else if (inNum < index) {
-                  while (inNum < index) {
-                    doc += splitContent[inNum] + "\n\n";
-                    inNum++;
-                  }
+  let inBlockComment = false;
+  for (let index = 0; index < splitContent.length; index++) {
+    const cont = splitContent[index];
+    const sanitized = sanitizeLine(cont, inBlockComment);
+    inBlockComment = sanitized.inBlock;
+    if (!sanitized.text.trim() || isLineComment(sanitized.text)) continue;
+    let m;
+    do {
+      m = regex.exec(sanitized.text);
+      if (m) {
+        const func = m[3];
+        const args = m[4];
+        let doc = "";
+        let endDoc = -1;
+        if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
+        if (endDoc !== -1) {
+          let startDoc = -1;
+          let inNum = index;
+          while (inNum >= 0) {
+            inNum--;
+            if (splitContent[inNum] === undefined) continue;
+            startDoc = splitContent[inNum].indexOf("/*");
+            if (startDoc !== -1) {
+              if (inNum === index) {
+                doc = splitContent[index];
+              } else if (inNum < index) {
+                while (inNum < index) {
+                  doc += splitContent[inNum] + "\n\n";
+                  inNum++;
                 }
-                break;
               }
+              break;
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
-          const noTagFunc = func.replace(/^[^:]*:/gm, "");
-          const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
-            kind: CompletionItemKind.Function,
-            insertText: noTagFunc,
-            documentation: doc,
-          };
-          const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(noTagFunc) },
-            end: {
-              line: index,
-              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
-            },
-          });
-          let params: ParameterInformation[] = [];
-          if (args.trim().length > 0) {
-            params = args.split(",").map((value) => ({ label: value.trim() }));
-          } else {
-            params = [];
-          }
-          const pwnFun: PawnFunction = {
-            textDocument: textDocument,
-            definition: newDef,
-            completion: newSnip,
-            params,
-            type: "function",
-          };
-
-          const findSnip = pawnFuncCollection.get(noTagFunc);
-          if (findSnip === undefined) {
-            pawnFuncCollection.set(noTagFunc, pwnFun);
-          } else {
-            if (
-              findSnip.type === "macrofunction" ||
-              findSnip.type === "macrodefine" ||
-              findSnip.type === "customsnip" ||
-              findSnip.type === "forward"
-            )
-              pawnFuncCollection.set(noTagFunc, pwnFun);
-          }
         }
-      } while (m);
-    }
-  });
+        doc = doc.replace("/*", "").replace("*/", "").trim();
+        const noTagFunc = func.replace(/^[^:]*:/gm, "");
+        const newSnip: CompletionItem = {
+          label: func + "(" + args + ")",
+          kind: CompletionItemKind.Function,
+          insertText: noTagFunc,
+          documentation: doc,
+        };
+        const newDef: Definition = Location.create(textDocument.uri, {
+          start: { line: index, character: m.input.indexOf(noTagFunc) },
+          end: {
+            line: index,
+            character: m.input.indexOf(noTagFunc) + noTagFunc.length,
+          },
+        });
+        let params: ParameterInformation[] = [];
+        if (args.trim().length > 0) {
+          params = args.split(",").map((value) => ({ label: value.trim() }));
+        } else {
+          params = [];
+        }
+        const pwnFun: PawnFunction = {
+          textDocument: textDocument,
+          definition: newDef,
+          completion: newSnip,
+          params,
+          type: "function",
+        };
+
+        const findSnip = pawnFuncCollection.get(noTagFunc);
+        if (findSnip === undefined) {
+          pawnFuncCollection.set(noTagFunc, pwnFun);
+        } else {
+          if (
+            findSnip.type === "macrofunction" ||
+            findSnip.type === "macrodefine" ||
+            findSnip.type === "customsnip" ||
+            findSnip.type === "forward"
+          )
+            pawnFuncCollection.set(noTagFunc, pwnFun);
+        }
+      }
+    } while (m);
+  }
 };
 
 export const parseForward = (textDocument: TextDocument) => {
   const regex = /^(\s*)(forward)\s+([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
-  let excempt = 0;
-  splitContent.forEach((cont: string, index: number) => {
-    if (commentRegex.test(cont)) {
-      excempt++;
-      // This is for single line block of comment, for example: 
-      // /* Some comment text here */
-      if (commentEndRegex.test(cont)) {
-        excempt--;
-      }
-    } else if (commentEndRegex.test(cont)) {
-      excempt--;
-    } else if (excempt === 0) {
-      let m;
-      do {
-        m = regex.exec(cont);
-        if (m) {
-          const func = m[3];
-          const args = m[4];
-          let doc = "";
-          let endDoc = -1;
-          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
-          if (endDoc !== -1) {
-            let startDoc = -1;
-            let inNum = index;
-            while (inNum >= 0) {
-              inNum--;
-              if (splitContent[inNum] === undefined) continue;
-              startDoc = splitContent[inNum].indexOf("/*");
-              if (startDoc !== -1) {
-                if (inNum === index) {
-                  doc = splitContent[index];
-                } else if (inNum < index) {
-                  while (inNum < index) {
-                    doc += splitContent[inNum] + "\n\n";
-                    inNum++;
-                  }
+  let inBlockComment = false;
+  for (let index = 0; index < splitContent.length; index++) {
+    const cont = splitContent[index];
+    const sanitized = sanitizeLine(cont, inBlockComment);
+    inBlockComment = sanitized.inBlock;
+    if (!sanitized.text.trim() || isLineComment(sanitized.text)) continue;
+    let m;
+    do {
+      m = regex.exec(sanitized.text);
+      if (m) {
+        const func = m[3];
+        const args = m[4];
+        let doc = "";
+        let endDoc = -1;
+        if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
+        if (endDoc !== -1) {
+          let startDoc = -1;
+          let inNum = index;
+          while (inNum >= 0) {
+            inNum--;
+            if (splitContent[inNum] === undefined) continue;
+            startDoc = splitContent[inNum].indexOf("/*");
+            if (startDoc !== -1) {
+              if (inNum === index) {
+                doc = splitContent[index];
+              } else if (inNum < index) {
+                while (inNum < index) {
+                  doc += splitContent[inNum] + "\n\n";
+                  inNum++;
                 }
-                break;
               }
+              break;
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
-          const noTagFunc = func.replace(/^[^:]*:/gm, "");
-          const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
-            kind: CompletionItemKind.Function,
-            insertText: func + "(" + args + ")",
-            documentation: doc,
-          };
-          const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(noTagFunc) },
-            end: {
-              line: index,
-              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
-            },
-          });
-          let params: ParameterInformation[] = [];
-          if (args.trim().length > 0) {
-            params = args.split(",").map((value) => ({ label: value.trim() }));
-          } else {
-            params = [];
-          }
-          const pwnFun: PawnFunction = {
-            textDocument: textDocument,
-            definition: newDef,
-            completion: newSnip,
-            params,
-            type: "forward",
-          };
-
-          const findSnip = pawnFuncCollection.get(noTagFunc);
-          if (findSnip === undefined) {
-            pawnFuncCollection.set(noTagFunc, pwnFun);
-          } else {
-            if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip")
-              pawnFuncCollection.set(noTagFunc, pwnFun);
-          }
         }
-      } while (m);
-    }
-  });
+        doc = doc.replace("/*", "").replace("*/", "").trim();
+        const noTagFunc = func.replace(/^[^:]*:/gm, "");
+        const newSnip: CompletionItem = {
+          label: func + "(" + args + ")",
+          kind: CompletionItemKind.Function,
+          insertText: func + "(" + args + ")",
+          documentation: doc,
+        };
+        const newDef: Definition = Location.create(textDocument.uri, {
+          start: { line: index, character: m.input.indexOf(noTagFunc) },
+          end: {
+            line: index,
+            character: m.input.indexOf(noTagFunc) + noTagFunc.length,
+          },
+        });
+        let params: ParameterInformation[] = [];
+        if (args.trim().length > 0) {
+          params = args.split(",").map((value) => ({ label: value.trim() }));
+        } else {
+          params = [];
+        }
+        const pwnFun: PawnFunction = {
+          textDocument: textDocument,
+          definition: newDef,
+          completion: newSnip,
+          params,
+          type: "forward",
+        };
+
+        const findSnip = pawnFuncCollection.get(noTagFunc);
+        if (findSnip === undefined) {
+          pawnFuncCollection.set(noTagFunc, pwnFun);
+        } else {
+          if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip")
+            pawnFuncCollection.set(noTagFunc, pwnFun);
+        }
+      }
+    } while (m);
+  }
 };
 
 export const parseFuncsNonPrefix = (textDocument: TextDocument) => {
   const regex = /^([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
-  let excempt = 0;
-  splitContent.forEach((cont: string, index: number) => {
-    if (commentRegex.test(cont)) {
-      excempt++;
-      // This is for single line block of comment, for example: 
-      // /* Some comment text here */
-      if (commentEndRegex.test(cont)) {
-        excempt--;
-      }
-    } else if (commentEndRegex.test(cont)) {
-      excempt--;
-    } else if (excempt === 0) {
-      let m;
-      do {
-        m = regex.exec(cont);
-        if (m) {
-          const func = m[1];
-          const args = m[2];
-          let doc = "";
-          let endDoc = -1;
-          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
-          if (endDoc !== -1) {
-            let startDoc = -1;
-            let inNum = index;
-            while (inNum >= 0) {
-              inNum--;
-              if (splitContent[inNum] === undefined) continue;
-              startDoc = splitContent[inNum].indexOf("/*");
-              if (startDoc !== -1) {
-                if (inNum === index) {
-                  doc = splitContent[index];
-                } else if (inNum < index) {
-                  while (inNum < index) {
-                    doc += splitContent[inNum] + "\n\n";
-                    inNum++;
-                  }
+  let inBlockComment = false;
+  for (let index = 0; index < splitContent.length; index++) {
+    const cont = splitContent[index];
+    const sanitized = sanitizeLine(cont, inBlockComment);
+    inBlockComment = sanitized.inBlock;
+    if (!sanitized.text.trim() || isLineComment(sanitized.text)) continue;
+    let m;
+    do {
+      m = regex.exec(sanitized.text);
+      if (m) {
+        const func = m[1];
+        const args = m[2];
+        let doc = "";
+        let endDoc = -1;
+        if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
+        if (endDoc !== -1) {
+          let startDoc = -1;
+          let inNum = index;
+          while (inNum >= 0) {
+            inNum--;
+            if (splitContent[inNum] === undefined) continue;
+            startDoc = splitContent[inNum].indexOf("/*");
+            if (startDoc !== -1) {
+              if (inNum === index) {
+                doc = splitContent[index];
+              } else if (inNum < index) {
+                while (inNum < index) {
+                  doc += splitContent[inNum] + "\n\n";
+                  inNum++;
                 }
-                break;
               }
+              break;
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
-          const noTagFunc = func.replace(/^[^:]*:/gm, "");
-          const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
-            kind: CompletionItemKind.Function,
-            insertText: noTagFunc,
-            documentation: doc,
-          };
-          const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(noTagFunc) },
-            end: {
-              line: index,
-              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
-            },
-          });
-          let params: ParameterInformation[] = [];
-          if (args.trim().length > 0) {
-            params = args.split(",").map((value) => ({ label: value.trim() }));
-          } else {
-            params = [];
-          }
-          const pwnFun: PawnFunction = {
-            textDocument: textDocument,
-            definition: newDef,
-            completion: newSnip,
-            params,
-            type: "function",
-          };
-          // const indexPos = func.indexOf(':');
-          // if (indexPos !== -1) {
-          // const resOut = /:(.*)/gm.exec(func);
-          // if (resOut) func = resOut[1];
-          // }
-          const findSnip = pawnFuncCollection.get(noTagFunc);
-          if (findSnip === undefined) {
-            pawnFuncCollection.set(noTagFunc, pwnFun);
-          } else {
-            if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip")
-              pawnFuncCollection.set(noTagFunc, pwnFun);
-          }
         }
-      } while (m);
-    }
-  });
+        doc = doc.replace("/*", "").replace("*/", "").trim();
+        const noTagFunc = func.replace(/^[^:]*:/gm, "");
+        const newSnip: CompletionItem = {
+          label: func + "(" + args + ")",
+          kind: CompletionItemKind.Function,
+          insertText: noTagFunc,
+          documentation: doc,
+        };
+        const newDef: Definition = Location.create(textDocument.uri, {
+          start: { line: index, character: m.input.indexOf(noTagFunc) },
+          end: {
+            line: index,
+            character: m.input.indexOf(noTagFunc) + noTagFunc.length,
+          },
+        });
+        let params: ParameterInformation[] = [];
+        if (args.trim().length > 0) {
+          params = args.split(",").map((value) => ({ label: value.trim() }));
+        } else {
+          params = [];
+        }
+        const pwnFun: PawnFunction = {
+          textDocument: textDocument,
+          definition: newDef,
+          completion: newSnip,
+          params,
+          type: "function",
+        };
+        // const indexPos = func.indexOf(':');
+        // if (indexPos !== -1) {
+        // const resOut = /:(.*)/gm.exec(func);
+        // if (resOut) func = resOut[1];
+        // }
+        const findSnip = pawnFuncCollection.get(noTagFunc);
+        if (findSnip === undefined) {
+          pawnFuncCollection.set(noTagFunc, pwnFun);
+        } else {
+          if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip")
+            pawnFuncCollection.set(noTagFunc, pwnFun);
+        }
+      }
+    } while (m);
+  }
 };
 
 export const parseNatives = (textDocument: TextDocument) => {
   const regex = /^(\s*)(native)\s([\S]{1,})\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
-  let excempt = 0;
-  splitContent.forEach((cont: string, index: number) => {
-    if (commentRegex.test(cont)) {
-      excempt++;
-      // This is for single line block of comment, for example: 
-      // /* Some comment text here */
-      if (commentEndRegex.test(cont)) {
-        excempt--;
-      }
-    } else if (commentEndRegex.test(cont)) {
-      excempt--;
-    } else if (excempt === 0) {
-      let m;
-      do {
-        m = regex.exec(cont);
-        if (m) {
-          const func = m[3];
-          const args = m[4];
-          let doc = "";
-          let endDoc = -1;
-          if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
-          if (endDoc !== -1) {
-            let startDoc = -1;
-            let inNum = index;
-            while (inNum >= 0) {
-              inNum--;
-              if (splitContent[inNum] === undefined) continue;
-              startDoc = splitContent[inNum].indexOf("/*");
-              if (startDoc !== -1) {
-                if (inNum === index) {
-                  doc = splitContent[index];
-                } else if (inNum < index) {
-                  while (inNum < index) {
-                    doc += splitContent[inNum] + "\n\n";
-                    inNum++;
-                  }
+  let inBlockComment = false;
+  for (let index = 0; index < splitContent.length; index++) {
+    const cont = splitContent[index];
+    const sanitized = sanitizeLine(cont, inBlockComment);
+    inBlockComment = sanitized.inBlock;
+    if (!sanitized.text.trim() || isLineComment(sanitized.text)) continue;
+    let m;
+    do {
+      m = regex.exec(sanitized.text);
+      if (m) {
+        const func = m[3];
+        const args = m[4];
+        let doc = "";
+        let endDoc = -1;
+        if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
+        if (endDoc !== -1) {
+          let startDoc = -1;
+          let inNum = index;
+          while (inNum >= 0) {
+            inNum--;
+            if (splitContent[inNum] === undefined) continue;
+            startDoc = splitContent[inNum].indexOf("/*");
+            if (startDoc !== -1) {
+              if (inNum === index) {
+                doc = splitContent[index];
+              } else if (inNum < index) {
+                while (inNum < index) {
+                  doc += splitContent[inNum] + "\n\n";
+                  inNum++;
                 }
-                break;
               }
+              break;
             }
           }
-          doc = doc.replace("/*", "").replace("*/", "").trim();
-          const noTagFunc = func.replace(/^[^:]*:/gm, "");
-          const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
-            kind: CompletionItemKind.Function,
-            insertText: noTagFunc,
-            documentation: doc,
-          };
-          const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(noTagFunc) },
-            end: {
-              line: index,
-              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
-            },
-          });
-          let params: ParameterInformation[] = [];
-          if (args.trim().length > 0) {
-            params = args.split(",").map((value) => ({ label: value.trim() }));
-          } else {
-            params = [];
-          }
-          const pwnFun: PawnFunction = {
-            textDocument: textDocument,
-            definition: newDef,
-            completion: newSnip,
-            params,
-            type: "native",
-          };
-          // const indexPos = func.indexOf(':');
-          // if (indexPos !== -1) {
-          // const resOut = /:(.*)/gm.exec(func);
-          // if (resOut) func = resOut[1];
-          // }
-          const findSnip = pawnFuncCollection.get(noTagFunc);
-          if (findSnip === undefined) {
-            pawnFuncCollection.set(noTagFunc, pwnFun);
-          } else {
-            if (findSnip.type !== "customsnip") pawnFuncCollection.set(noTagFunc, pwnFun);
-          }
         }
-      } while (m);
-    }
-  });
+        doc = doc.replace("/*", "").replace("*/", "").trim();
+        const noTagFunc = func.replace(/^[^:]*:/gm, "");
+        const newSnip: CompletionItem = {
+          label: func + "(" + args + ")",
+          kind: CompletionItemKind.Function,
+          insertText: noTagFunc,
+          documentation: doc,
+        };
+        const newDef: Definition = Location.create(textDocument.uri, {
+          start: { line: index, character: m.input.indexOf(noTagFunc) },
+          end: {
+            line: index,
+            character: m.input.indexOf(noTagFunc) + noTagFunc.length,
+          },
+        });
+        let params: ParameterInformation[] = [];
+        if (args.trim().length > 0) {
+          params = args.split(",").map((value) => ({ label: value.trim() }));
+        } else {
+          params = [];
+        }
+        const pwnFun: PawnFunction = {
+          textDocument: textDocument,
+          definition: newDef,
+          completion: newSnip,
+          params,
+          type: "native",
+        };
+        // const indexPos = func.indexOf(':');
+        // if (indexPos !== -1) {
+        // const resOut = /:(.*)/gm.exec(func);
+        // if (resOut) func = resOut[1];
+        // }
+        const findSnip = pawnFuncCollection.get(noTagFunc);
+        if (findSnip === undefined) {
+          pawnFuncCollection.set(noTagFunc, pwnFun);
+        } else {
+          if (findSnip.type !== "customsnip") pawnFuncCollection.set(noTagFunc, pwnFun);
+        }
+      }
+    } while (m);
+  }
 };
 
 export const parseWords = (textDocument: TextDocument) => {
@@ -653,27 +642,19 @@ export const parseWords = (textDocument: TextDocument) => {
   const splitContent = content.split("\n");
   const words: string[] = [];
   const wordCompletion: CompletionItem[] = [];
-  let excempt = 0;
-  splitContent.forEach((cont: string) => {
-    if (commentRegex.test(cont)) {
-      excempt++;
-      // This is for single line block of comment, for example: 
-      // /* Some comment text here */
-      if (commentEndRegex.test(cont)) {
-        excempt--;
+  let inBlockComment = false;
+  for (const cont of splitContent) {
+    const sanitized = sanitizeLine(cont, inBlockComment);
+    inBlockComment = sanitized.inBlock;
+    if (!sanitized.text.trim() || isLineComment(sanitized.text)) continue;
+    let m;
+    do {
+      m = regex.exec(sanitized.text);
+      if (m) {
+        if (words.indexOf(m[0]) === -1) words.push(m[0]);
       }
-    } else if (commentEndRegex.test(cont)) {
-      excempt--;
-    } else if (excempt === 0 && !RegExp(/^\/\//gm).test(cont.trim())) {
-      let m;
-      do {
-        m = regex.exec(cont);
-        if (m) {
-          if (words.indexOf(m[0]) === -1) words.push(m[0]);
-        }
-      } while (m);
-    }
-  });
+    } while (m);
+  }
   for (const key in words) {
     const element = words[key];
     const newSnip: CompletionItem = {

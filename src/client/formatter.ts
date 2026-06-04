@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { format } from "astyle";
 
 interface RegexCodeFix {
   expr: RegExp;
@@ -33,6 +32,71 @@ const afterFix: RegexCodeFix[] = [
   { expr: /(static|const|new) (.*?):\s+/gm, replacement: "$1 $2:" },
 ];
 
+let warnedMissingAstyle = false;
+let astyleFormatPromise: Promise<(text: string, options: string) => Promise<string>> | undefined;
+
+const loadAstyleFormatter = async () => {
+  if (astyleFormatPromise !== undefined) return astyleFormatPromise;
+
+  astyleFormatPromise = (async () => {
+    const listenersBeforeImport = snapshotProcessListeners();
+    const fetchDescriptor = Object.getOwnPropertyDescriptor(globalThis, "fetch");
+
+    try {
+      Object.defineProperty(globalThis, "fetch", {
+        configurable: true,
+        writable: true,
+        value: undefined,
+      });
+      const { format } = (await import("astyle")) as { format: (text: string, options: string) => Promise<string> };
+      return format;
+    } finally {
+      if (fetchDescriptor !== undefined) {
+        Object.defineProperty(globalThis, "fetch", fetchDescriptor);
+      } else {
+        delete (globalThis as { fetch?: unknown }).fetch;
+      }
+      removeNewProcessListeners(listenersBeforeImport);
+    }
+  })();
+
+  return astyleFormatPromise;
+};
+
+type ProcessListenerSnapshot = Map<string, Set<Function>>;
+type GuardedProcessEvent = "unhandledRejection" | "uncaughtException";
+type ProcessEventEmitter = {
+  listeners(event: string): Function[];
+  removeListener(event: string, listener: Function): void;
+};
+const guardedProcessEvents: GuardedProcessEvent[] = ["unhandledRejection", "uncaughtException"];
+
+const snapshotProcessListeners = (): ProcessListenerSnapshot => {
+  const snapshot: ProcessListenerSnapshot = new Map();
+  const processEvents = process as ProcessEventEmitter;
+
+  for (const event of guardedProcessEvents) {
+    snapshot.set(event, new Set(processEvents.listeners(event)));
+  }
+
+  return snapshot;
+};
+
+const removeNewProcessListeners = (snapshot: ProcessListenerSnapshot) => {
+  const processEvents = process as ProcessEventEmitter;
+
+  for (const event of guardedProcessEvents) {
+    const previousListeners = snapshot.get(event);
+    if (previousListeners === undefined) continue;
+
+    for (const listener of processEvents.listeners(event)) {
+      if (!previousListeners.has(listener)) {
+        processEvents.removeListener(event, listener);
+      }
+    }
+  }
+};
+
 const formatPawn = async (content: string) => {
   const brace_style = vscode.workspace.getConfiguration().get("pawn.language.brace_style") as
     | "Allman"
@@ -40,6 +104,8 @@ const formatPawn = async (content: string) => {
     | "Stroustrup"
     | "Google"
     | null;
+
+  const originalContent = content;
 
   for (const key in beforeFix) {
     const element = beforeFix[key];
@@ -68,7 +134,18 @@ const formatPawn = async (content: string) => {
     "--attach-return-type",
   ];
 
-  content = await format(content, formatterConfig.join(" "));
+  try {
+    const format = await loadAstyleFormatter();
+    content = await format(content, formatterConfig.join(" "));
+  } catch (error) {
+    console.error("Pawn formatter error:", error);
+    if (!warnedMissingAstyle) {
+      warnedMissingAstyle = true;
+      vscode.window.showWarningMessage("Pawn formatter is unavailable (missing 'astyle'). Formatting skipped.");
+    }
+    return originalContent; // Return original content on error
+  }
+
   for (const key in afterFix) {
     const element = afterFix[key];
     content = content.replace(element.expr, element.replacement);

@@ -2,23 +2,22 @@ import * as vscode from "vscode";
 import { client } from "./extension";
 
 export const initSnippetCollector = async (reset = false) => {
-  const filesPwn = await vscode.workspace.findFiles("**/*.pwn");
-  for (const key in filesPwn) {
-    const element = filesPwn[key];
-    (await vscode.workspace.openTextDocument(element)).getText();
-  }
+  try {
+    const files = await vscode.workspace.findFiles("**/*.{pwn,pawn,inc}", "**/node_modules/**", 500);
 
-  const filesPawn = await vscode.workspace.findFiles("**/*.pawn");
-  for (const key in filesPawn) {
-    const element = filesPawn[key];
-    (await vscode.workspace.openTextDocument(element)).getText();
-  }
+    for (const file of files) {
+      try {
+        const doc = await vscode.workspace.openTextDocument(file);
+        doc.getText();
+      } catch {
+        // Skip files that can't be opened (e.g., permission issues, network errors)
+      }
+    }
 
-  const filesInc = await vscode.workspace.findFiles("**/*.inc");
-  for (const key in filesInc) {
-    const element = filesInc[key];
-    (await vscode.workspace.openTextDocument(element)).getText();
+    if (client !== undefined && reset) {
+      client.sendNotification("revalidateAllOpenedDocuments");
+    }
+  } catch (error) {
+    console.error("Error initializing snippet collector:", error);
   }
-
-  if (client !== undefined && reset) client.sendNotification("revalidateAllOpenedDocuments");
 };

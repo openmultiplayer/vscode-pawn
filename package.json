@@ -2,7 +2,7 @@
   "name": "pawn-development",
   "displayName": "Pawn Development Tool",
   "description": "Pawn development tool for open.mp and SA:MP",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "publisher": "openmp",
   "engines": {
     "vscode": "^1.30.0"
@@ -48,7 +48,11 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node ./node_modules/vscode/bin/test",
-    "publish": "vsce publish minor"
+    "publish": "vsce publish minor",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
     "@types/vscode": "^1.70.0",
@@ -62,6 +66,7 @@
     "@typescript-eslint/eslint-plugin": "^5.33.1",
     "@typescript-eslint/parser": "^5.33.1",
     "eslint": "^8.22.0",
+    "prettier": "^3.7.4",
     "typescript": "^4.7.4"
   },
   "contributes": {
@@ -185,6 +190,14 @@
       {
         "command": "pawn-development.reloadDefs",
         "title": "Pawn Development: reload definitions"
+      },
+      {
+        "command": "pawn-development.previewDialog",
+        "title": "Pawn Development: Preview SA-MP Dialog"
+      },
+      {
+        "command": "pawn-development.previewMenu",
+        "title": "Pawn Development: Preview SA-MP Menu"
       }
     ],
     "menus": {

@@ -34,7 +34,7 @@ export const InitPawnIgnore = async function () {
       },
       (error: Error) => {
         console.error(error);
-      }
+      },
     );
   } else {
     vscode.window.showInformationMessage(".pawnignore already exists, aborting task");
@@ -70,7 +70,7 @@ export const addToPawnIgnore = async function (selectedFile: vscode.Uri) {
       },
       (error: Error) => {
         console.error(error);
-      }
+      },
     );
   }
 

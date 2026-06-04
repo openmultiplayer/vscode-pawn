@@ -38,7 +38,7 @@ const BuildTaskHandler = async function () {
     },
     (error: Error) => {
       console.error(error);
-    }
+    },
   );
 };
 
