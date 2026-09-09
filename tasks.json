@@ -6,8 +6,8 @@
       "type": "shell",
       "command": "pawncc", // pawncc compiler location, we suggest to add pawncc path into your environment
       "args": [
-        "grandlarc.pwn", // source file of gamemode
-        "-Dgamemodes", // Additional compiler arguments
+        "${file}",
+        "-D${fileDirname}",
         "'-;+'",
         "'-(+'",
         "'-d3'"
@@ -18,7 +18,7 @@
       },
       "isBackground": false,
       "presentation": {
-        "reveal": "silent",
+        "reveal": "always",
         "panel": "dedicated"
       },
       "problemMatcher": "$pawncc"

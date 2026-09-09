@@ -6,11 +6,11 @@ export const task = `{
 			"type": "shell",
 			"command": "pawncc",
 			"runOptions": {
-				"instanceLimit": 1,
+				"instanceLimit": 1
 			},
 			"args": [
 				"\${file}",
-				"-Dgamemodes",
+				"-D\${fileDirname}",
 				"'-;+'",
 				"'-(+'",
 				"'-d3'"
@@ -24,20 +24,7 @@ export const task = `{
 				"reveal": "always",
 				"panel": "dedicated"
 			},
-			"problemMatcher": {
-				"owner": "pawn",
-				"fileLocation": [
-					"relative",
-					"\${workspaceRoot}"
-				],
-				"pattern": {
-					"regexp": "^(.*?)\\\\(([0-9]*)[- 0-9]*\\\\) \\\\: (fatal error|error|warning) [0-9]*\\\\: (.*)$",
-					"file": 1,
-					"location": 2,
-					"severity": 3,
-					"message": 4
-				}
-			}
+			"problemMatcher": "$pawncc"
 		}
-	],
+	]
 }`;
