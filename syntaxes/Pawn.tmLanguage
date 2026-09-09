@@ -436,18 +436,18 @@
 			<key>begin</key> <string>^\s*(#)\s*(error|warning)\b</string>
 			<key>beginCaptures</key>
 			<dict>
-				<key>0</key> <dict> <key>name</key> <string>keyword.other.preprocessor.include.c</string> </dict>
+				<key>0</key> <dict> <key>name</key> <string>keyword.other.preprocessor.diagnostic.c</string> </dict>
 			</dict>
 			<key>end</key> <string>(.*)|(?&lt;=$\n)(?&lt;!\\$\n)</string>
 			<key>endCaptures</key>
 			<dict>
 				<key>1</key> <dict> <key>name</key> <string>string.quoted.double.c</string> </dict>
 			</dict>
-			<key>name</key> <string>meta.preprocessor.include.c meta.preprocessor.c.include</string>
+			<key>name</key> <string>meta.preprocessor.diagnostic.c</string>
 		</dict>
 		<key>ppline-pragma-mark</key>
 		<dict>
-			<key>begin</key> <string>(^\s*(#)\s*(pragma\s+(align|amxlimit|amxram|codepage|compress|ctrlchar|deprecated|dynamic|library|overlay|pack|rational|semicolon|tabsize|unused))\b)[\s&amp;&amp;[^\n]]*</string>
+			<key>begin</key> <string>(^\s*(#)\s*(pragma\s+(align|amxlimit|amxram|codepage|compress|ctrlchar|deprecated|dynamic|library|overlay|pack|rational|semicolon|tabsize|unused|warning|option|compatibility|disablestate|naked|reparse|extsym))\b)[\s&amp;&amp;[^\n]]*</string>
 			<key>beginCaptures</key>
 			<dict>
 				<key>1</key> <dict> <key>name</key> <string>keyword.other.preprocessor.pragma.c</string> </dict>
@@ -461,7 +461,7 @@
 		</dict>
 		<key>ppline-directive</key>
 		<dict>
-			<key>begin</key> <string>^\s*(#)\s*(if|elseif|else|endif|pragma|line|define|undef|section|assert|file|endinput|endscript)\b</string>
+			<key>begin</key> <string>^\s*(#)\s*(if|elseif|elif|else|endif|pragma|line|define|undef|section|assert|file|endinput|endscript)\b</string>
 			<key>beginCaptures</key>
 			<dict>
 				<key>0</key> <dict> <key>name</key> <string>keyword.other.preprocessor.c</string> </dict>
@@ -837,21 +837,28 @@
 					</array>
 				</dict>
 				<dict>
-					<key>match</key> <string>\s*\b(assert|break|case|continue|default|do|else|exit|for|goto|if|return|sleep|state|switch|while)\b</string>
+					<key>match</key> <string>\s*\b(assert|break|case|continue|default|do|else|exit|for|foreach|goto|if|return|sleep|state|switch|while|yield)\b</string>
 					<key>captures</key>
 					<dict>
 						<key>1</key> <dict> <key>name</key> <string>keyword.control.c</string> </dict>
 					</dict>
 				</dict>
 				<dict>
-					<key>match</key> <string>\s*\b(new|enum)\b</string>
+					<key>match</key> <string>\s*\b(new|enum|decl|struct)\b</string>
 					<key>captures</key>
 					<dict>
 						<key>1</key> <dict> <key>name</key> <string>storage.type.c</string> </dict>
 					</dict>
 				</dict>
 				<dict>
-					<key>match</key> <string>\s*\b(public|forward|native|char|const|static|stock|hook|task|ptask|void)\b</string>
+					<key>match</key> <string>\s*\b(bool|Float|File|Text|Text3D|PlayerText|PlayerText3D|Menu|DB|DBResult|Bit|Iterator|Task|Timer|Group|BitArray|ConstString)\b</string>
+					<key>captures</key>
+					<dict>
+						<key>1</key> <dict> <key>name</key> <string>storage.type.c</string> </dict>
+					</dict>
+				</dict>
+				<dict>
+					<key>match</key> <string>\s*\b(public|forward|native|char|const|static|stock|hook|task|ptask|inline|timer|function|func|void)\b</string>
 					<key>captures</key>
 					<dict>
 						<key>1</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
@@ -859,9 +866,22 @@
 				</dict>
 				<dict>
 					<key>match</key>
-					<string>([A-Za-z_]\w*)\:</string>
-					<key>name</key>
-					<string>storage.modifier.c</string>
+					<string>\b(CMD|COMMAND|YCMD|flags)\s*(:)\s*([A-Za-z0-9_]+)\b</string>
+					<key>captures</key>
+					<dict>
+						<key>1</key> <dict> <key>name</key> <string>entity.name.function.macro.c</string> </dict>
+						<key>2</key> <dict> <key>name</key> <string>punctuation.separator.colon.c</string> </dict>
+						<key>3</key> <dict> <key>name</key> <string>entity.name.function.c</string> </dict>
+					</dict>
+				</dict>
+				<dict>
+					<key>match</key>
+					<string>\b([A-Za-z_]\w*)\s*(\:)</string>
+					<key>captures</key>
+					<dict>
+						<key>1</key> <dict> <key>name</key> <string>storage.type.tag.c</string> </dict>
+						<key>2</key> <dict> <key>name</key> <string>punctuation.separator.colon.c</string> </dict>
+					</dict>
 				</dict>
 
 				<dict>
@@ -906,6 +926,12 @@
 					<key>name</key>
 					<string>keyword.operator.bitwise.c</string>
 				</dict>
+				<dict>
+					<key>match</key>
+					<string>\b(sizeof|tagof|defined)\b</string>
+					<key>name</key>
+					<string>keyword.operator.sizeof.c</string>
+				</dict>
 			</array>
 		</dict>
 		<key>lex-constant</key>
@@ -913,7 +939,7 @@
 			<key>patterns</key>
 			<array>
 				<dict>
-					<key>match</key> <string>\s*\b(true|false|TRUE|FALSE)\b</string>
+					<key>match</key> <string>\s*\b(true|false|TRUE|FALSE|cellmin|cellmax|cellbits|cellbytes|EOS|INVALID_PLAYER_ID|INVALID_VEHICLE_ID|INVALID_OBJECT_ID|INVALID_ACTOR_ID|INVALID_3DTEXT_ID|INVALID_GANG_ZONE|INVALID_TEXT_DRAW|NO_TEAM)\b</string>
 					<key>captures</key>
 					<dict>
 						<key>1</key> <dict> <key>name</key> <string>constant.language.c</string> </dict>
