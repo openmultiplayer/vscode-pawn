@@ -12,6 +12,7 @@ import {
   MarkupKind,
 } from "vscode-languageserver";
 import { findFunctionIdentifier, positionToIndex, findIdentifierAtCursor, isPawnExt } from "./common";
+import { getOpenMpDoc, getOpenMpCompletionItems } from "./openmpData";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { connection } from "./server";
 import * as fs from "fs";
@@ -36,7 +37,7 @@ export const resetAutocompletes = () => {
 };
 
 export const parseDefine = (textDocument: TextDocument) => {
-  const regexDefine = /^(\s*)#define\s+([^\s()]{1,})\s+([^\s]{1,})$/gm;
+  const regexDefine = /^(\s*)#define\s+([^\s()]{1,})\s+(.+)$/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -56,10 +57,10 @@ export const parseDefine = (textDocument: TextDocument) => {
         m = regexDefine.exec(cont);
         if (m) {
           const func = m[2];
-          const arg = m[3];
+          const arg = m[3].trim();
           const newSnip: CompletionItem = {
             label: func,
-            kind: CompletionItemKind.Text,
+            kind: CompletionItemKind.Constant,
             insertText: func,
             documentation: `${func} ${arg}`,
           };
@@ -288,7 +289,7 @@ export const parseCustomSnip = (textDocument: TextDocument) => {
 };
 
 export const parseFuncs = (textDocument: TextDocument) => {
-  const regex = /^(\s*)(public|stock|function|func)\s+([\S]{1,})\((.*?)\)/gm;
+  const regex = /^(\s*)(?:(?:(public|stock|function|func)\s+(?:([A-Za-z0-9_]+)\s*:\s*)?([A-Za-z0-9_@]+))|(?:(CMD|COMMAND|YCMD|flags)\s*:\s*([A-Za-z0-9_@]+)))\s*\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -307,8 +308,10 @@ export const parseFuncs = (textDocument: TextDocument) => {
       do {
         m = regex.exec(cont);
         if (m) {
-          const func = m[3];
-          const args = m[4];
+          const isCommand = m[5] !== undefined;
+          const tag = isCommand ? m[5] : m[3];
+          const func = isCommand ? m[6] : m[4];
+          const args = m[7];
           let doc = "";
           let endDoc = -1;
           if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
@@ -333,18 +336,18 @@ export const parseFuncs = (textDocument: TextDocument) => {
             }
           }
           doc = doc.replace("/*", "").replace("*/", "").trim();
-          const noTagFunc = func.replace(/^[^:]*:/gm, "");
+          const displayLabel = (tag ? tag + ":" : "") + func + "(" + args + ")";
           const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
-            kind: CompletionItemKind.Function,
-            insertText: noTagFunc,
+            label: displayLabel,
+            kind: isCommand ? CompletionItemKind.Event : CompletionItemKind.Function,
+            insertText: func,
             documentation: doc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(noTagFunc) },
+            start: { line: index, character: m.input.indexOf(func) },
             end: {
               line: index,
-              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
+              character: m.input.indexOf(func) + func.length,
             },
           });
           let params: ParameterInformation[] = [];
@@ -361,9 +364,9 @@ export const parseFuncs = (textDocument: TextDocument) => {
             type: "function",
           };
 
-          const findSnip = pawnFuncCollection.get(noTagFunc);
+          const findSnip = pawnFuncCollection.get(func);
           if (findSnip === undefined) {
-            pawnFuncCollection.set(noTagFunc, pwnFun);
+            pawnFuncCollection.set(func, pwnFun);
           } else {
             if (
               findSnip.type === "macrofunction" ||
@@ -371,7 +374,10 @@ export const parseFuncs = (textDocument: TextDocument) => {
               findSnip.type === "customsnip" ||
               findSnip.type === "forward"
             )
-              pawnFuncCollection.set(noTagFunc, pwnFun);
+              pawnFuncCollection.set(func, pwnFun);
+          }
+          if (isCommand) {
+            pawnFuncCollection.set(tag + ":" + func, pwnFun);
           }
         }
       } while (m);
@@ -380,7 +386,7 @@ export const parseFuncs = (textDocument: TextDocument) => {
 };
 
 export const parseForward = (textDocument: TextDocument) => {
-  const regex = /^(\s*)(forward)\s+([\S]{1,})\((.*?)\)/gm;
+  const regex = /^(\s*)(forward)\s+(?:([A-Za-z0-9_]+)\s*:\s*)?([A-Za-z0-9_@]+)\s*\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -399,8 +405,9 @@ export const parseForward = (textDocument: TextDocument) => {
       do {
         m = regex.exec(cont);
         if (m) {
-          const func = m[3];
-          const args = m[4];
+          const tag = m[3];
+          const func = m[4];
+          const args = m[5];
           let doc = "";
           let endDoc = -1;
           if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
@@ -425,18 +432,18 @@ export const parseForward = (textDocument: TextDocument) => {
             }
           }
           doc = doc.replace("/*", "").replace("*/", "").trim();
-          const noTagFunc = func.replace(/^[^:]*:/gm, "");
+          const displayLabel = (tag ? tag + ":" : "") + func + "(" + args + ")";
           const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
+            label: displayLabel,
             kind: CompletionItemKind.Function,
-            insertText: func + "(" + args + ")",
+            insertText: func,
             documentation: doc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(noTagFunc) },
+            start: { line: index, character: m.input.indexOf(func) },
             end: {
               line: index,
-              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
+              character: m.input.indexOf(func) + func.length,
             },
           });
           let params: ParameterInformation[] = [];
@@ -453,12 +460,12 @@ export const parseForward = (textDocument: TextDocument) => {
             type: "forward",
           };
 
-          const findSnip = pawnFuncCollection.get(noTagFunc);
+          const findSnip = pawnFuncCollection.get(func);
           if (findSnip === undefined) {
-            pawnFuncCollection.set(noTagFunc, pwnFun);
+            pawnFuncCollection.set(func, pwnFun);
           } else {
             if (findSnip.type === "macrofunction" || findSnip.type === "macrodefine" || findSnip.type === "customsnip")
-              pawnFuncCollection.set(noTagFunc, pwnFun);
+              pawnFuncCollection.set(func, pwnFun);
           }
         }
       } while (m);
@@ -558,7 +565,7 @@ export const parseFuncsNonPrefix = (textDocument: TextDocument) => {
 };
 
 export const parseNatives = (textDocument: TextDocument) => {
-  const regex = /^(\s*)(native)\s([\S]{1,})\((.*?)\)/gm;
+  const regex = /^(\s*)(native)\s+(?:([A-Za-z0-9_]+)\s*:\s*)?([A-Za-z0-9_@]+)\s*\((.*?)\)/gm;
   const content = textDocument.getText();
   const splitContent = content.split("\n");
   let excempt = 0;
@@ -577,8 +584,9 @@ export const parseNatives = (textDocument: TextDocument) => {
       do {
         m = regex.exec(cont);
         if (m) {
-          const func = m[3];
-          const args = m[4];
+          const tag = m[3];
+          const func = m[4];
+          const args = m[5];
           let doc = "";
           let endDoc = -1;
           if (splitContent[index - 1] !== undefined) endDoc = splitContent[index - 1].indexOf("*/");
@@ -603,18 +611,18 @@ export const parseNatives = (textDocument: TextDocument) => {
             }
           }
           doc = doc.replace("/*", "").replace("*/", "").trim();
-          const noTagFunc = func.replace(/^[^:]*:/gm, "");
+          const displayLabel = (tag ? tag + ":" : "") + func + "(" + args + ")";
           const newSnip: CompletionItem = {
-            label: func + "(" + args + ")",
+            label: displayLabel,
             kind: CompletionItemKind.Function,
-            insertText: noTagFunc,
+            insertText: func,
             documentation: doc,
           };
           const newDef: Definition = Location.create(textDocument.uri, {
-            start: { line: index, character: m.input.indexOf(noTagFunc) },
+            start: { line: index, character: m.input.indexOf(func) },
             end: {
               line: index,
-              character: m.input.indexOf(noTagFunc) + noTagFunc.length,
+              character: m.input.indexOf(func) + func.length,
             },
           });
           let params: ParameterInformation[] = [];
@@ -630,16 +638,12 @@ export const parseNatives = (textDocument: TextDocument) => {
             params,
             type: "native",
           };
-          // const indexPos = func.indexOf(':');
-          // if (indexPos !== -1) {
-          // const resOut = /:(.*)/gm.exec(func);
-          // if (resOut) func = resOut[1];
-          // }
-          const findSnip = pawnFuncCollection.get(noTagFunc);
+
+          const findSnip = pawnFuncCollection.get(func);
           if (findSnip === undefined) {
-            pawnFuncCollection.set(noTagFunc, pwnFun);
+            pawnFuncCollection.set(func, pwnFun);
           } else {
-            if (findSnip.type !== "customsnip") pawnFuncCollection.set(noTagFunc, pwnFun);
+            if (findSnip.type !== "customsnip") pawnFuncCollection.set(func, pwnFun);
           }
         }
       } while (m);
@@ -767,6 +771,13 @@ export const doCompletion = async (params: CompletionParams) => {
   pawnFuncCollection.forEach((res) => comItems.push(res.completion));
   const findSnip = pawnWords.get(params.textDocument.uri);
   if (findSnip !== undefined) findSnip.forEach((res) => comItems.push(res));
+
+  const openmpItems = getOpenMpCompletionItems();
+  for (const item of openmpItems) {
+    if (!pawnFuncCollection.has(item.label) && !pawnFuncCollection.has(item.insertText || item.label)) {
+      comItems.push(item);
+    }
+  }
   return comItems;
 };
 
@@ -782,21 +793,71 @@ export const doHover = (document: TextDocument, position: Position): Hover | und
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findIdentifierAtCursor(document.getText(), cursorIndex);
   if (result.identifier.length === 0) return undefined;
-  const snip = pawnFuncCollection.get(result.identifier);
-  if (snip === undefined) return undefined;
-  const markdown: MarkupContent = {
-    kind: MarkupKind.Markdown,
-    value: [
+
+  const cleanIdentifier = result.identifier.includes(":")
+    ? result.identifier.substring(result.identifier.lastIndexOf(":") + 1)
+    : result.identifier;
+
+  const snip = pawnFuncCollection.get(cleanIdentifier) || pawnFuncCollection.get(result.identifier);
+  if (snip && snip.completion.documentation && snip.completion.documentation.toString().trim().length > 0) {
+    const markdown: MarkupContent = {
+      kind: MarkupKind.Markdown,
+      value: [
+        "```pawn",
+        snip.completion.label !== undefined ? snip.completion.label : cleanIdentifier,
+        "```",
+        "---",
+        snip.completion.documentation !== undefined && snip.completion.documentation.toString(),
+      ].join("\n"),
+    };
+    return {
+      contents: markdown,
+    };
+  }
+
+  const openmpEntry = getOpenMpDoc(cleanIdentifier) || getOpenMpDoc(result.identifier);
+  if (openmpEntry) {
+    const lines = [
       "```pawn",
-      snip.completion.label !== undefined && snip.completion.label,
+      openmpEntry.signature,
       "```",
       "---",
-      snip.completion.documentation !== undefined && snip.completion.documentation.toString(),
-    ].join("\n"),
-  };
-  return {
-    contents: markdown,
-  };
+      openmpEntry.description,
+    ];
+    if (openmpEntry.parameters && openmpEntry.parameters.length > 0) {
+      lines.push("", "**Parameters:**");
+      for (const param of openmpEntry.parameters) {
+        lines.push(`- \`${param.name}\`: ${param.description}`);
+      }
+    }
+    if (openmpEntry.returns) {
+      lines.push("", `**Returns:** ${openmpEntry.returns}`);
+    }
+    if (openmpEntry.example) {
+      lines.push("", "**Example:**", "```pawn", openmpEntry.example, "```");
+    }
+    return {
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: lines.join("\n"),
+      },
+    };
+  }
+
+  if (snip) {
+    return {
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: [
+          "```pawn",
+          snip.completion.label !== undefined ? snip.completion.label : cleanIdentifier,
+          "```",
+        ].join("\n"),
+      },
+    };
+  }
+
+  return undefined;
 };
 
 export const doSignHelp = (document: TextDocument, position: Position): SignatureHelp | undefined => {
@@ -805,20 +866,48 @@ export const doSignHelp = (document: TextDocument, position: Position): Signatur
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findFunctionIdentifier(document.getText(), cursorIndex);
   if (result.identifier === "") return undefined;
-  const snip = pawnFuncCollection.get(result.identifier);
-  if (snip === undefined) return undefined;
-  return {
-    activeParameter: 0,
-    activeSignature: 0,
-    signatures: [
-      {
-        label: snip.completion.label,
-        parameters: snip.params,
-        documentation: snip.completion.documentation,
-        activeParameter: result.parameterIndex,
-      },
-    ],
-  };
+
+  const cleanIdentifier = result.identifier.includes(":")
+    ? result.identifier.substring(result.identifier.lastIndexOf(":") + 1)
+    : result.identifier;
+
+  const snip = pawnFuncCollection.get(cleanIdentifier) || pawnFuncCollection.get(result.identifier);
+  if (snip && snip.params && snip.params.length > 0) {
+    return {
+      activeParameter: 0,
+      activeSignature: 0,
+      signatures: [
+        {
+          label: snip.completion.label,
+          parameters: snip.params,
+          documentation: snip.completion.documentation,
+          activeParameter: result.parameterIndex,
+        },
+      ],
+    };
+  }
+
+  const openmpEntry = getOpenMpDoc(cleanIdentifier) || getOpenMpDoc(result.identifier);
+  if (openmpEntry && openmpEntry.parameters && openmpEntry.parameters.length > 0) {
+    const params: ParameterInformation[] = openmpEntry.parameters.map((p) => ({
+      label: p.name,
+      documentation: p.description,
+    }));
+    return {
+      activeParameter: 0,
+      activeSignature: 0,
+      signatures: [
+        {
+          label: openmpEntry.signature,
+          parameters: params,
+          documentation: openmpEntry.description,
+          activeParameter: result.parameterIndex,
+        },
+      ],
+    };
+  }
+
+  return undefined;
 };
 
 export const doGoToDef = (document: TextDocument, position: Position) => {
@@ -827,7 +916,10 @@ export const doGoToDef = (document: TextDocument, position: Position) => {
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findIdentifierAtCursor(document.getText(), cursorIndex);
   if (result.identifier.length === 0) return;
-  const snip = pawnFuncCollection.get(result.identifier);
+  const cleanIdentifier = result.identifier.includes(":")
+    ? result.identifier.substring(result.identifier.lastIndexOf(":") + 1)
+    : result.identifier;
+  const snip = pawnFuncCollection.get(cleanIdentifier) || pawnFuncCollection.get(result.identifier);
   if (snip === undefined) return;
   return snip.definition;
 };
