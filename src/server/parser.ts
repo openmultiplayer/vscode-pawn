@@ -10,10 +10,13 @@ import {
   CompletionParams,
   MarkupContent,
   MarkupKind,
+  SymbolInformation,
 } from "vscode-languageserver";
 import { findFunctionIdentifier, positionToIndex, findIdentifierAtCursor, isPawnExt } from "./common";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { connection } from "./server";
+import { getYsiDoc, getYsiCompletionItems } from "./ysiData";
+import { globalIncludeIndexer } from "./includeIndexer";
 import * as fs from "fs";
 import * as url from "url";
 import * as path from "path";
@@ -33,6 +36,7 @@ const commentEndRegex = RegExp(/\*\//gm);
 
 export const resetAutocompletes = () => {
   pawnFuncCollection.clear();
+  globalIncludeIndexer.clear();
 };
 
 export const parseDefine = (textDocument: TextDocument) => {
@@ -758,6 +762,7 @@ export const parseSnippets = async (textDocument: TextDocument, reset = true) =>
   if (allowDefineFunction) parseFuncsDefines(textDocument);
   if (allowDefine) parseDefine(textDocument);
   if (allowWords) parseWords(textDocument);
+  globalIncludeIndexer.indexDocument(textDocument);
 };
 
 export const doCompletion = async (params: CompletionParams) => {
@@ -767,6 +772,14 @@ export const doCompletion = async (params: CompletionParams) => {
   pawnFuncCollection.forEach((res) => comItems.push(res.completion));
   const findSnip = pawnWords.get(params.textDocument.uri);
   if (findSnip !== undefined) findSnip.forEach((res) => comItems.push(res));
+
+  const ysiItems = getYsiCompletionItems();
+  for (const item of ysiItems) {
+    if (!pawnFuncCollection.has(item.label) && !pawnFuncCollection.has(item.insertText || item.label)) {
+      comItems.push(item);
+    }
+  }
+
   return comItems;
 };
 
@@ -782,21 +795,72 @@ export const doHover = (document: TextDocument, position: Position): Hover | und
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findIdentifierAtCursor(document.getText(), cursorIndex);
   if (result.identifier.length === 0) return undefined;
-  const snip = pawnFuncCollection.get(result.identifier);
-  if (snip === undefined) return undefined;
-  const markdown: MarkupContent = {
-    kind: MarkupKind.Markdown,
-    value: [
+
+  const cleanIdentifier = result.identifier.includes(":")
+    ? result.identifier.substring(result.identifier.lastIndexOf(":") + 1)
+    : result.identifier;
+
+  const snip = pawnFuncCollection.get(cleanIdentifier) || pawnFuncCollection.get(result.identifier);
+  if (snip && snip.completion.documentation && snip.completion.documentation.toString().trim().length > 0) {
+    const markdown: MarkupContent = {
+      kind: MarkupKind.Markdown,
+      value: [
+        "```pawn",
+        snip.completion.label !== undefined ? snip.completion.label : cleanIdentifier,
+        "```",
+        "---",
+        snip.completion.documentation !== undefined && snip.completion.documentation.toString(),
+      ].join("\n"),
+    };
+    return {
+      contents: markdown,
+    };
+  }
+
+  const ysiEntry = getYsiDoc(cleanIdentifier) || getYsiDoc(result.identifier);
+  if (ysiEntry) {
+    const lines = [
+      `**YSI Library:** \`${ysiEntry.package}\``,
       "```pawn",
-      snip.completion.label !== undefined && snip.completion.label,
+      ysiEntry.signature,
       "```",
       "---",
-      snip.completion.documentation !== undefined && snip.completion.documentation.toString(),
-    ].join("\n"),
-  };
-  return {
-    contents: markdown,
-  };
+      ysiEntry.description,
+    ];
+    if (ysiEntry.parameters && ysiEntry.parameters.length > 0) {
+      lines.push("", "**Parameters:**");
+      for (const param of ysiEntry.parameters) {
+        lines.push(`- \`${param.name}\`: ${param.description}`);
+      }
+    }
+    if (ysiEntry.returns) {
+      lines.push("", `**Returns:** ${ysiEntry.returns}`);
+    }
+    if (ysiEntry.example) {
+      lines.push("", "**Example:**", "```pawn", ysiEntry.example, "```");
+    }
+    return {
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: lines.join("\n"),
+      },
+    };
+  }
+
+  if (snip) {
+    return {
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: [
+          "```pawn",
+          snip.completion.label !== undefined ? snip.completion.label : cleanIdentifier,
+          "```",
+        ].join("\n"),
+      },
+    };
+  }
+
+  return undefined;
 };
 
 export const doSignHelp = (document: TextDocument, position: Position): SignatureHelp | undefined => {
@@ -805,20 +869,48 @@ export const doSignHelp = (document: TextDocument, position: Position): Signatur
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findFunctionIdentifier(document.getText(), cursorIndex);
   if (result.identifier === "") return undefined;
-  const snip = pawnFuncCollection.get(result.identifier);
-  if (snip === undefined) return undefined;
-  return {
-    activeParameter: 0,
-    activeSignature: 0,
-    signatures: [
-      {
-        label: snip.completion.label,
-        parameters: snip.params,
-        documentation: snip.completion.documentation,
-        activeParameter: result.parameterIndex,
-      },
-    ],
-  };
+
+  const cleanIdentifier = result.identifier.includes(":")
+    ? result.identifier.substring(result.identifier.lastIndexOf(":") + 1)
+    : result.identifier;
+
+  const snip = pawnFuncCollection.get(cleanIdentifier) || pawnFuncCollection.get(result.identifier);
+  if (snip && snip.params && snip.params.length > 0) {
+    return {
+      activeParameter: 0,
+      activeSignature: 0,
+      signatures: [
+        {
+          label: snip.completion.label,
+          parameters: snip.params,
+          documentation: snip.completion.documentation,
+          activeParameter: result.parameterIndex,
+        },
+      ],
+    };
+  }
+
+  const ysiEntry = getYsiDoc(cleanIdentifier) || getYsiDoc(result.identifier);
+  if (ysiEntry && ysiEntry.parameters && ysiEntry.parameters.length > 0) {
+    const params: ParameterInformation[] = ysiEntry.parameters.map((p) => ({
+      label: p.name,
+      documentation: p.description,
+    }));
+    return {
+      activeParameter: 0,
+      activeSignature: 0,
+      signatures: [
+        {
+          label: ysiEntry.signature,
+          parameters: params,
+          documentation: ysiEntry.description,
+          activeParameter: result.parameterIndex,
+        },
+      ],
+    };
+  }
+
+  return undefined;
 };
 
 export const doGoToDef = (document: TextDocument, position: Position) => {
@@ -827,7 +919,20 @@ export const doGoToDef = (document: TextDocument, position: Position) => {
   const cursorIndex = positionToIndex(document.getText(), position);
   const result = findIdentifierAtCursor(document.getText(), cursorIndex);
   if (result.identifier.length === 0) return;
-  const snip = pawnFuncCollection.get(result.identifier);
-  if (snip === undefined) return;
-  return snip.definition;
+
+  const cleanIdentifier = result.identifier.includes(":")
+    ? result.identifier.substring(result.identifier.lastIndexOf(":") + 1)
+    : result.identifier;
+  const snip = pawnFuncCollection.get(cleanIdentifier) || pawnFuncCollection.get(result.identifier);
+  if (snip !== undefined) return snip.definition;
+
+  // Fallback to workspace / external include indexer
+  const indexerDef = globalIncludeIndexer.findDefinition(cleanIdentifier) || globalIncludeIndexer.findDefinition(result.identifier);
+  if (indexerDef !== undefined) return indexerDef;
+
+  return undefined;
+};
+
+export const doWorkspaceSymbols = (query: string): SymbolInformation[] => {
+  return globalIncludeIndexer.searchWorkspaceSymbols(query);
 };

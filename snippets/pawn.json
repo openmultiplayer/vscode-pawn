@@ -1,0 +1,398 @@
+{
+  "OnPlayerConnect Callback": {
+    "prefix": ["opc", "OnPlayerConnect"],
+    "body": [
+      "public OnPlayerConnect(playerid)",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player connects to the server."
+  },
+  "OnPlayerDisconnect Callback": {
+    "prefix": ["opd", "OnPlayerDisconnect"],
+    "body": [
+      "public OnPlayerDisconnect(playerid, reason)",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player leaves the server."
+  },
+  "OnPlayerSpawn Callback": {
+    "prefix": ["ops", "OnPlayerSpawn"],
+    "body": [
+      "public OnPlayerSpawn(playerid)",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player spawns."
+  },
+  "OnPlayerDeath Callback": {
+    "prefix": ["opdeath", "OnPlayerDeath"],
+    "body": [
+      "public OnPlayerDeath(playerid, killerid, reason)",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player dies or is killed."
+  },
+  "OnPlayerText Callback": {
+    "prefix": ["opt", "OnPlayerText"],
+    "body": [
+      "public OnPlayerText(playerid, text[])",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player sends a chat message."
+  },
+  "OnDialogResponse Callback": {
+    "prefix": ["odr", "OnDialogResponse"],
+    "body": [
+      "public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])",
+      "{",
+      "\tswitch (dialogid)",
+      "\t{",
+      "\t\tcase ${1:DIALOG_ID}:",
+      "\t\t{",
+      "\t\t\tif (!response) return 1;",
+      "\t\t\t${0}",
+      "\t\t\treturn 1;",
+      "\t\t}",
+      "\t}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player responds to a dialog."
+  },
+  "OnPlayerKeyStateChange Callback": {
+    "prefix": ["opkey", "OnPlayerKeyStateChange"],
+    "body": [
+      "public OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)",
+      "{",
+      "\tif ((newkeys & ${1:KEY_FIRE}) && !(oldkeys & ${1:KEY_FIRE}))",
+      "\t{",
+      "\t\t${0}",
+      "\t}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player presses or releases a key."
+  },
+  "OnPlayerStateChange Callback": {
+    "prefix": ["opstate", "OnPlayerStateChange"],
+    "body": [
+      "public OnPlayerStateChange(playerid, PLAYER_STATE:newstate, PLAYER_STATE:oldstate)",
+      "{",
+      "\tif (newstate == PLAYER_STATE_DRIVER)",
+      "\t{",
+      "\t\t${0}",
+      "\t}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player changes state."
+  },
+  "OnPlayerWeaponShot Callback": {
+    "prefix": ["opweaponshot", "OnPlayerWeaponShot"],
+    "body": [
+      "public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY, Float:fZ)",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when a player fires a weapon."
+  },
+  "OnGameModeInit Callback": {
+    "prefix": ["ogmi", "OnGameModeInit"],
+    "body": [
+      "public OnGameModeInit()",
+      "{",
+      "\tSetGameModeText(\"${1:open.mp GameMode}\");",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when the gamemode initializes."
+  },
+  "OnGameModeExit Callback": {
+    "prefix": ["ogme", "OnGameModeExit"],
+    "body": [
+      "public OnGameModeExit()",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Callback called when the gamemode shuts down."
+  },
+  "CMD Command": {
+    "prefix": ["cmd", "CMD:"],
+    "body": [
+      "CMD:${1:commandname}(playerid, params[])",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Fast command pattern (Pawn.CMD / zcmd / izcmd)."
+  },
+  "Admin Command": {
+    "prefix": ["admincmd", "cmdadmin"],
+    "body": [
+      "CMD:${1:admincmd}(playerid, params[])",
+      "{",
+      "\tif (!${2:IsPlayerAdmin(playerid)}) return ${3:SendClientMessage(playerid, -1, \"Error: You are not authorized to use this command.\")};",
+      "\tnew ${4:targetid};",
+      "\tif (sscanf(params, \"u\", ${4:targetid})) return SendClientMessage(playerid, -1, \"Usage: /${1:admincmd} [playerid]\");",
+      "\tif (!IsPlayerConnected(${4:targetid})) return SendClientMessage(playerid, -1, \"Error: Player is not connected.\");",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Admin command skeleton with authorization check and sscanf parameters."
+  },
+  "YCMD Command": {
+    "prefix": ["ycmd", "YCMD:"],
+    "body": [
+      "YCMD:${1:commandname}(playerid, params[], help)",
+      "{",
+      "\tif (help)",
+      "\t{",
+      "\t\t${2:SendClientMessage(playerid, -1, \"Help description for /${1:commandname}\");}",
+      "\t\treturn 1;",
+      "\t}",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "YSI YCMD command skeleton with built-in help parameter."
+  },
+  "Optimized Player Pool Loop": {
+    "prefix": ["loop_players", "forplayers"],
+    "body": [
+      "for (new ${1:i} = 0, ${2:maxPlayers} = GetPlayerPoolSize(); ${1:i} <= ${2:maxPlayers}; ++${1:i})",
+      "{",
+      "\tif (!IsPlayerConnected(${1:i})) continue;",
+      "\t${0}",
+      "}"
+    ],
+    "description": "High-performance player loop using GetPlayerPoolSize() and IsPlayerConnected()."
+  },
+  "Optimized Vehicle Pool Loop": {
+    "prefix": ["loop_vehicles", "forvehicles"],
+    "body": [
+      "for (new ${1:v} = 1, ${2:maxVehicles} = GetVehiclePoolSize(); ${1:v} <= ${2:maxVehicles}; ++${1:v})",
+      "{",
+      "\tif (!IsValidVehicle(${1:v})) continue;",
+      "\t${0}",
+      "}"
+    ],
+    "description": "High-performance vehicle loop using GetVehiclePoolSize() and IsValidVehicle()."
+  },
+  "Optimized Actor Pool Loop": {
+    "prefix": ["loop_actors", "foractors"],
+    "body": [
+      "for (new ${1:a} = 0, ${2:maxActors} = GetActorPoolSize(); ${1:a} <= ${2:maxActors}; ++${1:a})",
+      "{",
+      "\tif (!IsValidActor(${1:a})) continue;",
+      "\t${0}",
+      "}"
+    ],
+    "description": "High-performance actor NPC loop using GetActorPoolSize() and IsValidActor()."
+  },
+  "Optimized Array Loop": {
+    "prefix": ["forarr", "loop_array"],
+    "body": [
+      "for (new ${1:i} = 0, ${2:size} = sizeof(${3:array}); ${1:i} < ${2:size}; ++${1:i})",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "Optimized array loop caching sizeof in a local variable."
+  },
+  "Foreach Player Loop": {
+    "prefix": ["foreach_player", "feplayer"],
+    "body": [
+      "foreach (new ${1:i} : Player)",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "YSI / modern foreach loop over online players."
+  },
+  "Foreach Iterator Loop": {
+    "prefix": ["foreach", "fe"],
+    "body": [
+      "foreach (new ${1:i} : ${2:Iterator})",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "YSI foreach iterator loop."
+  },
+  "Timer Function Skeleton": {
+    "prefix": ["timerfunc", "forwardtimer"],
+    "body": [
+      "forward ${1:OnTimerTick}(${2:playerid});",
+      "public ${1:OnTimerTick}(${2:playerid})",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Public function declaration and implementation for SetTimerEx."
+  },
+  "ShowPlayerDialog Helper": {
+    "prefix": ["showdialog", "spd"],
+    "body": [
+      "ShowPlayerDialog(${1:playerid}, ${2:DIALOG_ID}, ${3:DIALOG_STYLE_MSGBOX}, \"${4:Title}\", \"${5:Body text}\", \"${6:OK}\", \"${7:Cancel}\");"
+    ],
+    "description": "Displays a modal dialog to the player."
+  },
+  "Include Guard": {
+    "prefix": ["guard", "includeguard"],
+    "body": [
+      "#if defined _${1:header}_included",
+      "\t#endinput",
+      "#endif",
+      "#define _${1:header}_included",
+      "",
+      "${0}"
+    ],
+    "description": "Include guard preventing multiple inclusion of a header file."
+  },
+  "ALS Callback Hook": {
+    "prefix": ["hook", "alshook"],
+    "body": [
+      "#if defined _ALS_${1:OnPlayerConnect}",
+      "\t#undef ${1:OnPlayerConnect}",
+      "#else",
+      "\t#define _ALS_${1:OnPlayerConnect}",
+      "#endif",
+      "#define ${1:OnPlayerConnect} ${2:HOOK}_${1:OnPlayerConnect}",
+      "forward ${2:HOOK}_${1:OnPlayerConnect}(${3:playerid});",
+      "",
+      "public ${2:HOOK}_${1:OnPlayerConnect}(${3:playerid})",
+      "{",
+      "\t${0}",
+      "\t#if defined ${2:HOOK}_${1:OnPlayerConnect}",
+      "\t\treturn ${2:HOOK}_${1:OnPlayerConnect}(${3:playerid});",
+      "\t#else",
+      "\t\treturn 1;",
+      "\t#endif",
+      "}"
+    ],
+    "description": "ALS (Advanced Library System) hook pattern for callbacks."
+  },
+  "open.mp Base Gamemode Skeleton": {
+    "prefix": ["openmp_main", "omp_base"],
+    "body": [
+      "#define OPEN_MP_CORE",
+      "#include <open.mp>",
+      "",
+      "main()",
+      "{",
+      "\tprint(\"${1:open.mp server starting...}\");",
+      "}",
+      "",
+      "public OnGameModeInit()",
+      "{",
+      "\tSetGameModeText(\"${2:open.mp Mode}\");",
+      "\tAddPlayerClass(0, 1958.3783, 1343.1572, 15.3746, 270.1425, 0, 0, 0, 0, 0, 0);",
+      "\treturn 1;",
+      "}",
+      "",
+      "public OnPlayerConnect(playerid)",
+      "{",
+      "\tSendClientMessage(playerid, -1, \"Welcome to the open.mp server!\");",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Complete boilerplate starter script for an open.mp gamemode."
+  },
+  "YSI Hook Callback": {
+    "prefix": ["yhook", "hook"],
+    "body": [
+      "hook ${1|OnGameModeInit,OnPlayerConnect,OnPlayerDisconnect,OnPlayerSpawn,OnPlayerDeath,OnDialogResponse|}(${2:playerid})",
+      "{",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "Modular callback hook using YSI y_hooks."
+  },
+  "YSI INI Load Section": {
+    "prefix": ["yini", "INI_Load"],
+    "body": [
+      "INI_Load:${1:User}[${2:data}](${3:playerid}, const name[], const value[])",
+      "{",
+      "\tINI_String(\"${4:password}\", ${5:UserPassword}[${3:playerid}], ${6:64});",
+      "\tINI_Int(\"${7:score}\", ${8:UserScore}[${3:playerid}]);",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "YSI y_ini section loader function."
+  },
+  "YSI Server Task": {
+    "prefix": ["ytask", "task"],
+    "body": [
+      "task ${1:ServerTask}[${2:1000}]()",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "YSI y_timers background task running every interval."
+  },
+  "YSI Player Task": {
+    "prefix": ["yptask", "ptask"],
+    "body": [
+      "ptask ${1:PlayerRadar}[${2:500}](${3:playerid})",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "YSI y_timers per-player task running every interval."
+  },
+  "YSI Timer Declaration": {
+    "prefix": ["ytimer", "timer"],
+    "body": [
+      "timer ${1:MyTimer}[${2:5000}](${3:playerid})",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "YSI y_timers function callable via defer or repeat."
+  },
+  "YSI Command Handler": {
+    "prefix": ["ycmd", "YCMD"],
+    "body": [
+      "YCMD:${1:mycommand}(playerid, const params[], help)",
+      "{",
+      "\tif (help) return SendClientMessage(playerid, -1, \"${2:Command description...}\");",
+      "\t${0}",
+      "\treturn 1;",
+      "}"
+    ],
+    "description": "YSI y_commands command handler."
+  },
+  "YSI Foreach Loop": {
+    "prefix": ["yforeach", "foreach"],
+    "body": [
+      "foreach (new ${1:i} : ${2|Player,Bot,Vehicle|})",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "YSI y_iterate high-performance entity loop."
+  }
+}

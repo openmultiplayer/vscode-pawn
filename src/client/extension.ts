@@ -7,6 +7,9 @@ import { LanguageClient, LanguageClientOptions, ServerOptions, State, TransportK
 import { addToPawnIgnore, InitPawnIgnore } from "./whitelistedpaths";
 import PawnFoldingProvider from "./FoldingProvider";
 
+import { PawnCodeActionProvider, PawnRenameProvider, handleExtractMacro, handleCleanIncludes } from "./refactorProvider";
+import { PawnDebugConfigurationProvider, PawnDebugAdapterDescriptorFactory } from "./debugger/pawnDebugProvider";
+
 export let client: LanguageClient;
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -20,7 +23,34 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
   context.subscriptions.push(
+    vscode.commands.registerCommand("pawn-development.extractMacro", handleExtractMacro)
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pawn-development.cleanIncludes", handleCleanIncludes)
+  );
+
+  context.subscriptions.push(
     vscode.languages.registerFoldingRangeProvider({ scheme: "file", language: "pawn" }, new PawnFoldingProvider())
+  );
+  context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider(
+      { scheme: "file", language: "pawn" },
+      new PawnCodeActionProvider(),
+      { providedCodeActionKinds: PawnCodeActionProvider.providedCodeActionKinds }
+    )
+  );
+  context.subscriptions.push(
+    vscode.languages.registerRenameProvider(
+      { scheme: "file", language: "pawn" },
+      new PawnRenameProvider()
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.debug.registerDebugConfigurationProvider("pawn", new PawnDebugConfigurationProvider())
+  );
+  context.subscriptions.push(
+    vscode.debug.registerDebugAdapterDescriptorFactory("pawn", new PawnDebugAdapterDescriptorFactory())
   );
 
   vscode.languages.registerDocumentFormattingEditProvider("pawn", PawnDocumentFormattingEditProvider);

@@ -39,8 +39,11 @@
     "onCommand:pawn-development.initScanDir",
     "onCommand:pawn-development.pawnignore",
     "onCommand:pawn-development.initTask",
+    "onCommand:pawn-development.extractMacro",
+    "onCommand:pawn-development.cleanIncludes",
     "onLanguage:pawn",
-    "onLanguage:Pawn"
+    "onLanguage:Pawn",
+    "onDebug"
   ],
   "main": "./out/client/extension.js",
   "scripts": {
@@ -87,6 +90,12 @@
         "language": "pawn",
         "scopeName": "source.pawn",
         "path": "./syntaxes/Pawn.tmLanguage"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "pawn",
+        "path": "./snippets/pawn.json"
       }
     ],
     "configuration": {
@@ -149,6 +158,26 @@
           "type": "boolean",
           "default": "true",
           "description": "enable to view last line of region section when it's collaped, if you select false then only first line will be visible."
+        },
+        "pawn.formatter.tabIndent": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format code using tab characters instead of spaces (community standard)."
+        },
+        "pawn.formatter.indentSize": {
+          "type": "number",
+          "default": 4,
+          "description": "Indentation size in spaces (when tabIndent is false)."
+        },
+        "pawn.includePaths": {
+          "type": "array",
+          "default": [
+            "include",
+            "pawno/include",
+            "qawno/include",
+            "components"
+          ],
+          "description": "Additional search directory paths for external .inc and .pwn includes."
         }
       }
     },
@@ -185,6 +214,96 @@
       {
         "command": "pawn-development.reloadDefs",
         "title": "Pawn Development: reload definitions"
+      },
+      {
+        "command": "pawn-development.extractMacro",
+        "title": "Pawn: Extract Selection to #define Macro"
+      },
+      {
+        "command": "pawn-development.cleanIncludes",
+        "title": "Pawn: Clean Unused Include Directives"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "pawn",
+        "label": "Pawn Debugger (open.mp / GDB)",
+        "languages": [
+          "pawn"
+        ],
+        "configurationAttributes": {
+          "launch": {
+            "required": [],
+            "properties": {
+              "serverPath": {
+                "type": "string",
+                "description": "Path to omp-server executable",
+                "default": "${workspaceFolder}/omp-server.exe"
+              },
+              "serverArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Arguments passed to server executable"
+              },
+              "amxPath": {
+                "type": "string",
+                "description": "Path to compiled AMX gamemode",
+                "default": "${fileDirname}/${fileBasenameNoExtension}.amx"
+              },
+              "pawnDebugPort": {
+                "type": "number",
+                "description": "Pawn debugger socket port",
+                "default": 4242
+              },
+              "debuggerHost": {
+                "type": "string",
+                "description": "Host address of the debugger server",
+                "default": "127.0.0.1"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Automatically pause execution on entry",
+                "default": true
+              }
+            }
+          },
+          "attach": {
+            "required": [],
+            "properties": {
+              "pawnDebugPort": {
+                "type": "number",
+                "description": "Pawn debugger socket port to connect to",
+                "default": 4242
+              },
+              "debuggerHost": {
+                "type": "string",
+                "description": "Debugger server host address",
+                "default": "127.0.0.1"
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "name": "Pawn: Launch open.mp Server with Debugger",
+            "type": "pawn",
+            "request": "launch",
+            "serverPath": "${workspaceFolder}/omp-server.exe",
+            "amxPath": "${fileDirname}/${fileBasenameNoExtension}.amx",
+            "pawnDebugPort": 4242,
+            "debuggerHost": "127.0.0.1",
+            "stopOnEntry": true
+          },
+          {
+            "name": "Pawn: Attach to open.mp Debugger",
+            "type": "pawn",
+            "request": "attach",
+            "pawnDebugPort": 4242,
+            "debuggerHost": "127.0.0.1"
+          }
+        ]
       }
     ],
     "menus": {
