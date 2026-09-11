@@ -8,6 +8,10 @@ interface RegexCodeFix {
 
 const beforeFix: RegexCodeFix[] = [
   { expr: /(^[ \t]+#|^#)/gm, replacement: "//pawnd_tag_hash_$1" },
+  { expr: /\b(task|ptask|timer)\s+([A-Za-z0-9_]+)\s*\[\s*([0-9]+)\s*\]\s*\((.*?)\)/gm, replacement: "void pawnd_ysi_timer_$1___$2___$3___$4()" },
+  { expr: /\b(YCMD|CMD|COMMAND|flags)\s*:\s*([A-Za-z0-9_]+)\s*\((.*?)\)/gm, replacement: "void pawnd_cmd_$1___$2___$3()" },
+  { expr: /\bINI_Load\s*:\s*([A-Za-z0-9_]+)\s*\[\s*([A-Za-z0-9_]+)\s*\]/gm, replacement: "void pawnd_ini_load_$1___$2" },
+  { expr: /\bhook\s+(?:stock\s+|public\s+)?([A-Za-z0-9_]+)\s*\((.*?)\)/gm, replacement: "void pawnd_ysi_hook_$1___$2()" },
   { expr: /\f|\v|\t*(new|static|const)\s*\n\s*((.|\s)*?)\s*;/gm, replacement: "$1 $2;" },
   { expr: /case\s*(\S*)\s*:\s*(\w+\s*.*;)/gm, replacement: "case $1pawnd_switch_case_signle_line$2" },
   { expr: /extract\s*(.*)->\s*(.*?);/gm, replacement: "pawnd_sscanf_extract_$1___$2___" },
@@ -19,6 +23,13 @@ const beforeFix: RegexCodeFix[] = [
 
 const afterFix: RegexCodeFix[] = [
   { expr: /\bpawnd_tag_const\b/gm, replacement: "const" },
+  { expr: /void pawnd_ysi_timer_(task|ptask|timer)___([A-Za-z0-9_]+)___([0-9]+)___\(\)/gm, replacement: "$1 $2[$3]()" },
+  { expr: /void pawnd_ysi_timer_(task|ptask|timer)___([A-Za-z0-9_]+)___([0-9]+)___(.*?)\(\)/gm, replacement: "$1 $2[$3]($4)" },
+  { expr: /void pawnd_cmd_(YCMD|CMD|COMMAND|flags)___([A-Za-z0-9_]+)___\(\)/gm, replacement: "$1:$2()" },
+  { expr: /void pawnd_cmd_(YCMD|CMD|COMMAND|flags)___([A-Za-z0-9_]+)___(.*?)\(\)/gm, replacement: "$1:$2($3)" },
+  { expr: /void pawnd_ini_load_([A-Za-z0-9_]+)___([A-Za-z0-9_]+)/gm, replacement: "INI_Load:$1[$2]" },
+  { expr: /void pawnd_ysi_hook_([A-Za-z0-9_]+)___\(\)/gm, replacement: "hook $1()" },
+  { expr: /void pawnd_ysi_hook_([A-Za-z0-9_]+)___(.*?)\(\)/gm, replacement: "hook $1($2)" },
   { expr: /case(.*)pawnd_switch_case_signle_line/gm, replacement: "case$1: " },
   { expr: /pawnd_sscanf_extract_(.*?)___(.*?)___/gm, replacement: "extract $1-> $2;" },
   { expr: /pawnd_tag_semicolon/gm, replacement: ":" },
@@ -28,18 +39,22 @@ const afterFix: RegexCodeFix[] = [
   { expr: /static(\s+)const/gm, replacement: "static const" },
   { expr: /\.\s\./gm, replacement: ".." },
   { expr: /^[ \t]+\/\/pawnd_tag_hash_|^\/\/pawnd_tag_hash_/gm, replacement: "" },
-  { expr: /CMD(.*):\r\n(.*)\(/gim, replacement: "CMD$1:$2(" },
-  { expr: /CMD(.*):\n(.*)\(/gim, replacement: "CMD$1:$2(" },
+  { expr: /(CMD|YCMD|COMMAND|flags)(.*):\r?\n\s*(.*)\(/gim, replacement: "$1$2:$3(" },
   { expr: /(static|const|new) (.*?):\s+/gm, replacement: "$1 $2:" },
 ];
 
 const formatPawn = async (content: string) => {
-  const brace_style = vscode.workspace.getConfiguration().get("pawn.language.brace_style") as
+  const config = vscode.workspace.getConfiguration();
+  const brace_style = config.get("pawn.language.brace_style") as
     | "Allman"
     | "K&R"
     | "Stroustrup"
     | "Google"
     | null;
+
+  const tabIndent = config.get("pawn.formatter.tabIndent", true);
+  const indentSize = config.get("pawn.formatter.indentSize", 4);
+  const indentFlag = tabIndent ? "--indent=tab" : `--indent=spaces=${indentSize}`;
 
   for (const key in beforeFix) {
     const element = beforeFix[key];
@@ -56,6 +71,7 @@ const formatPawn = async (content: string) => {
 
   const formatterConfig = [
     `--style=${style()}`,
+    indentFlag,
     "--indent-switches",
     "--indent-preproc-define",
     "--indent-col1-comments",

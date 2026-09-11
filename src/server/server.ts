@@ -10,17 +10,30 @@ import {
   SignatureHelpParams,
   SignatureHelp,
   CompletionParams,
+  WorkspaceSymbolParams,
 } from "vscode-languageserver/node";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { parseSnippets, doCompletion, doCompletionResolve, doGoToDef, doHover, doSignHelp, resetAutocompletes } from "./parser";
+import { parseSnippets, doCompletion, doCompletionResolve, doGoToDef, doHover, doSignHelp, resetAutocompletes, doWorkspaceSymbols } from "./parser";
+import { globalIncludeIndexer } from "./includeIndexer";
+import * as url from "url";
 
 export const connection = createConnection(ProposedFeatures.all);
 export const documents = new TextDocuments(TextDocument);
 documents.listen(connection);
 connection.listen();
 
-connection.onInitialize(() => {
+connection.onInitialize((params) => {
+  if (params.workspaceFolders) {
+    const folders: string[] = [];
+    for (const wf of params.workspaceFolders) {
+      try {
+        folders.push(url.fileURLToPath(wf.uri));
+      } catch (e) {}
+    }
+    globalIncludeIndexer.setWorkspaceFolders(folders);
+  }
+
   return {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
@@ -33,6 +46,7 @@ connection.onInitialize(() => {
       signatureHelpProvider: {
         triggerCharacters: ["(", ","],
       },
+      workspaceSymbolProvider: true,
       workspace: {
         workspaceFolders: {
           supported: true,
@@ -91,4 +105,8 @@ connection.onCompletion(async (params: CompletionParams) => {
 
 connection.onCompletionResolve(async (item: CompletionItem): Promise<CompletionItem> => {
   return await doCompletionResolve(item);
+});
+
+connection.onWorkspaceSymbol((params: WorkspaceSymbolParams) => {
+  return doWorkspaceSymbols(params.query);
 });
