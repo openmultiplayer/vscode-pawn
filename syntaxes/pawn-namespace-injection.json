@@ -1,0 +1,12 @@
+{
+  "scopeName": "pawn.namespace-after-modifier.injection",
+  "injectionSelector": "L:source.pawn -comment -string",
+  "patterns": [
+    {
+      "match": "(?<=\\b(?:stock|public|forward|native|static|hook|task|ptask)\\s+)((?:[A-Za-z_@]\\w*::)+)(?=\\s*[A-Za-z_]\\w*\\s*\\()",
+      "captures": {
+        "1": { "name": "storage.modifier.c" }
+      }
+    }
+  ]
+}

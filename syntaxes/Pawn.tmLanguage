@@ -155,7 +155,6 @@
 		</dict>
 		<key>function-declaration</key>
 		<dict>
-			<key>name</key> <string>meta.function.c</string>
 			<key>begin</key>
 			<string>(?x)
 				(?: ^
@@ -168,9 +167,9 @@
 				  | #  or type modifier / closing bracket before name
 				    (?&lt;= [^&amp;]&amp; | [*&gt;)}\]] ) ) \s*
 
-				(   (?: [A-Za-z_@]\w*+ | ::[^:] )++
-				    (?: (?&lt;= ^ operator | \W operator )  # C++ operator?
-				        (?: [-*&amp;&lt;&gt;=+!]+ | \(\) | \[\] ) )? )
+				(::)?((?:[A-Za-z_@]\w*+::)+)?([A-Za-z_@]\w*+)
+				(?: (?&lt;= ^ operator | \W operator )  # C++ operator?
+				    (?: [-*&amp;&lt;&gt;=+!]+ | \(\) | \[\] ) )?
 
 				(?= (?:\s|/\*.*?\*/)*+ (?'parens' \(
 				            (?&gt; \g'parens' |
@@ -180,7 +179,9 @@
 			</string>
 			<key>beginCaptures</key>
 			<dict>
-				<key>1</key> <dict> <key>name</key> <string>entity.name.function.declaration.c</string> </dict>
+				<key>1</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
+				<key>2</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
+				<key>3</key> <dict> <key>name</key> <string>entity.name.function.declaration.c</string> </dict>
 			</dict>
 			<key>end</key> <string>;</string>
 			<key>patterns</key>
@@ -191,7 +192,6 @@
 		</dict>
 		<key>function-definition</key>
 		<dict>
-			<key>name</key> <string>meta.function.c</string>
 			<key>begin</key>
 			<string>(?x)
 				(?: ^
@@ -204,15 +204,17 @@
 				  | #  or type modifier / closing bracket before name
 				    (?&lt;= [^&amp;]&amp; | [*&gt;)}\]\:] ) ) \s*
 
-				(   (?: [A-Za-z_@]\w*+ | ::[^:] )++
-				    (?: (?&lt;= ^ operator | \W operator )  # C++ operator?
-				        (?: [-*&amp;&lt;&gt;=+!]+ | \(\) | \[\] ) )? )
+				(::)?((?:[A-Za-z_@]\w*+::)+)?([A-Za-z_@]\w*+)
+				(?: (?&lt;= ^ operator | \W operator )  # C++ operator?
+				    (?: [-*&amp;&lt;&gt;=+!]+ | \(\) | \[\] ) )?
 
 				(?= (?:\s|/\*.*?\*/)*+ \( )
 			</string>
 			<key>beginCaptures</key>
 			<dict>
-				<key>1</key> <dict> <key>name</key> <string>entity.name.function.definition.c</string> </dict>
+				<key>1</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
+				<key>2</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
+				<key>3</key> <dict> <key>name</key> <string>entity.name.function.definition.c</string> </dict>
 			</dict>
 			<key>end</key> <string>\}|;</string>
 			<key>patterns</key>
@@ -234,7 +236,7 @@
 			<string>(?x)
 				\s*
 				(?= # don't consume to recognize support functions
-				    (?: [A-Za-z_@]\w*+ | ::[^:] )++
+				    (?:::)?(?:[A-Za-z_@]\w*+::)*[A-Za-z_@]\w*+
 				    (?:\s|/\*.*?\*/)*+ \( )
 			</string>
 			<key>end</key> <string>\)</string>
@@ -246,8 +248,13 @@
 					<key>name</key> <string>variable.other.dot-access.c support.function.any-method.c</string>
 				</dict>
 				<dict>
-					<key>match</key> <string>(?:[A-Za-z_@]\w*+|::[^:])++</string>
-					<key>name</key> <string>support.function.any-method.c</string>
+					<key>match</key> <string>(::)?((?:[A-Za-z_@]\w*+::)+)?([A-Za-z_@]\w*+)</string>
+					<key>captures</key>
+					<dict>
+						<key>1</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
+						<key>2</key> <dict> <key>name</key> <string>storage.modifier.c</string> </dict>
+						<key>3</key> <dict> <key>name</key> <string>support.function.any-method.c</string> </dict>
+					</dict>
 				</dict>
 				<dict> <key>include</key> <string>#parens-lookahead-end</string> </dict>
 			</array>
